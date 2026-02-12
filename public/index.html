@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Учёт операций по карте</title>
+    <title>Учёт операций по реквизитам</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         * {
@@ -61,12 +61,27 @@
             color: var(--tg-theme-text-color, #e0e0e0);
         }
 
-        h1 {
-            text-align: center;
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            overflow-x: auto;
+        }
+
+        .tab {
+            padding: 10px 20px;
+            border-radius: 8px;
+            background: var(--tg-theme-secondary-bg-color, #3a3a3a);
             color: var(--tg-theme-text-color, #e0e0e0);
-            margin-bottom: 20px;
-            font-size: 1.5em;
-            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            white-space: nowrap;
+            font-size: 14px;
+        }
+
+        .tab.active {
+            background: var(--tg-theme-button-color, #5c6bc0);
+            color: var(--tg-theme-button-text-color, white);
         }
 
         .summary {
@@ -115,6 +130,49 @@
             color: white;
         }
 
+        .section {
+            display: none;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        .bank-list {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .bank-card {
+            padding: 15px;
+            border-radius: 10px;
+            background: var(--tg-theme-secondary-bg-color, #2d2d2d);
+            text-align: center;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .bank-card:active {
+            opacity: 0.7;
+        }
+
+        .bank-card.selected {
+            border-color: var(--tg-theme-button-color, #5c6bc0);
+        }
+
+        .bank-icon {
+            font-size: 32px;
+            margin-bottom: 8px;
+        }
+
+        .bank-name {
+            font-size: 14px;
+            font-weight: 500;
+        }
+
         .card {
             background: var(--tg-theme-secondary-bg-color, #2d2d2d);
             border-radius: 12px;
@@ -151,7 +209,7 @@
             flex: 0 0 45%;
         }
 
-        .card-row input {
+        .card-row input, .card-row select {
             width: 50%;
             padding: 8px;
             border: 1px solid var(--tg-theme-hint-color, #4a4a4a);
@@ -161,7 +219,7 @@
             color: var(--tg-theme-text-color, #e0e0e0);
         }
 
-        .card-row input:focus {
+        .card-row input:focus, .card-row select:focus {
             outline: none;
             border-color: var(--tg-theme-button-color, #5c6bc0);
         }
@@ -215,21 +273,29 @@
             width: auto;
         }
 
-        .empty-state {
-            text-align: center;
-            padding: 40px 20px;
-            color: var(--tg-theme-hint-color, #888);
+        .requisite-item {
+            background: var(--tg-theme-secondary-bg-color, #2d2d2d);
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
-        .empty-state-icon {
-            font-size: 48px;
-            margin-bottom: 15px;
+        .requisite-info {
+            flex: 1;
         }
 
-        .loading {
-            text-align: center;
-            padding: 40px;
-            color: var(--tg-theme-hint-color, #888);
+        .requisite-bank {
+            font-size: 12px;
+            color: var(--tg-theme-hint-color, #b0b0b0);
+        }
+
+        .requisite-number {
+            font-size: 16px;
+            font-weight: 600;
+            margin-top: 4px;
         }
     </style>
 </head>
@@ -261,34 +327,139 @@
             </div>
         </div>
 
-        <div id="cardsList"></div>
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('records')">📝 Записи</button>
+            <button class="tab" onclick="switchTab('requisites')">💳 Реквизиты</button>
+            <button class="tab" onclick="switchTab('history')">📊 История</button>
+        </div>
 
-        <button class="btn btn-primary" onclick="addCard()">➕ Добавить операцию</button>
+        <!-- Раздел: Записи -->
+        <div id="recordsSection" class="section active">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Новая запись</h3>
+                </div>
+                <div class="card-row">
+                    <label>Реквизит:</label>
+                    <select id="requisiteSelect">
+                        <option value="">Выберите реквизит</option>
+                    </select>
+                </div>
+                <div class="card-row">
+                    <label>Дата:</label>
+                    <input type="date" id="recordDate">
+                </div>
+                <div class="card-row">
+                    <label>Вход (₽):</label>
+                    <input type="number" id="recordIncome" value="0" min="0" step="0.01">
+                </div>
+                <div class="card-row">
+                    <label>% заработка:</label>
+                    <input type="number" id="recordIncomePercent" value="11" min="0" max="100" step="0.01">
+                </div>
+                <div class="card-row">
+                    <label>Потрачено (₽):</label>
+                    <input type="number" id="recordSpent" value="0" min="0" step="0.01">
+                </div>
+                <div class="card-row">
+                    <label>Выход (₽):</label>
+                    <input type="number" id="recordBuyback" value="0" min="0" step="0.01">
+                </div>
+                <div class="card-row">
+                    <label>% откупа:</label>
+                    <input type="number" id="recordBuybackPercent" value="1" min="0" max="100" step="0.01">
+                </div>
+                <div class="card-result">
+                    <div class="label">Заработано за день</div>
+                    <div class="value" id="recordEarned">0.00 ₽</div>
+                </div>
+            </div>
+            <button class="btn btn-primary" onclick="addRecord()">➕ Добавить запись</button>
+        </div>
+
+        <!-- Раздел: Реквизиты -->
+        <div id="requisitesSection" class="section">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Добавить реквизит</h3>
+                </div>
+                <div class="bank-list" id="bankList"></div>
+                <div class="card-row">
+                    <label>Номер реквизита:</label>
+                    <input type="text" id="requisiteNumber" placeholder="Введите номер">
+                </div>
+            </div>
+            <button class="btn btn-primary" onclick="addRequisite()">➕ Добавить реквизит</button>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h3>Мои реквизиты</h3>
+                </div>
+                <div id="requisitesList"></div>
+            </div>
+        </div>
+
+        <!-- Раздел: История -->
+        <div id="historySection" class="section">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Фильтры</h3>
+                </div>
+                <div class="card-row">
+                    <label>Дата от:</label>
+                    <input type="date" id="filterDateFrom">
+                </div>
+                <div class="card-row">
+                    <label>Дата до:</label>
+                    <input type="date" id="filterDateTo">
+                </div>
+                <div class="card-row">
+                    <label>Реквизит:</label>
+                    <select id="filterRequisite">
+                        <option value="">Все реквизиты</option>
+                    </select>
+                </div>
+                <button class="btn btn-primary" onclick="applyFilters()">Применить</button>
+            </div>
+            
+            <div id="historyList"></div>
+        </div>
     </div>
 
     <script>
         let tg = window.Telegram.WebApp;
-        let rowCounter = 0;
         let currentUser = null;
         let userData = null;
+        let selectedBank = null;
+        
+        const banks = [
+            { id: 'sber', name: 'Сбербанк', icon: '🟢' },
+            { id: 'tinkoff', name: 'Тинькофф', icon: '🟡' },
+            { id: 'alpha', name: 'Альфа-Банк', icon: '🔴' },
+            { id: 'vtb', name: 'ВТБ', icon: '🔵' },
+            { id: 'raif', name: 'Райффайзен', icon: '🟠' },
+            { id: 'gazprom', name: 'Газпромбанк', icon: '⚫' },
+            { id: 'open', name: 'Открытие', icon: '🟣' },
+            { id: 'other', name: 'Другой', icon: '⚪' }
+        ];
+
+        let appData = {
+            requisites: [],
+            records: []
+        };
 
         // Инициализация
         tg.ready();
         tg.expand();
-        
-        // Применить тему Telegram
         document.body.style.backgroundColor = tg.backgroundColor || '#1a1a1a';
 
-        // Получить данные пользователя из Telegram
         if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
             userData = tg.initDataUnsafe.user;
             currentUser = 'tg_' + userData.id;
-            
             const firstName = userData.first_name || 'Пользователь';
             const lastName = userData.last_name || '';
             document.getElementById('userName').textContent = firstName + (lastName ? ' ' + lastName : '');
             document.getElementById('userAvatar').textContent = firstName.charAt(0).toUpperCase();
-            
             loadData();
         } else {
             document.getElementById('userName').textContent = 'Гость';
@@ -297,77 +468,184 @@
             loadData();
         }
 
-        function addCard() {
-            rowCounter++;
-            const cardsList = document.getElementById('cardsList');
-            const card = document.createElement('div');
-            card.className = 'card';
-            card.id = `card-${rowCounter}`;
-            
-            card.innerHTML = `
-                <div class="card-header">
-                    <h3>Операция #${rowCounter}</h3>
-                    <button class="btn-danger" onclick="deleteCard(${rowCounter})">Удалить</button>
+        // Установить сегодняшнюю дату
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('recordDate').value = today;
+        document.getElementById('filterDateFrom').value = today;
+        document.getElementById('filterDateTo').value = today;
+
+        // Отрисовать банки
+        function renderBanks() {
+            const bankList = document.getElementById('bankList');
+            bankList.innerHTML = banks.map(bank => `
+                <div class="bank-card" onclick="selectBank('${bank.id}')">
+                    <div class="bank-icon">${bank.icon}</div>
+                    <div class="bank-name">${bank.name}</div>
                 </div>
-                <div class="card-row">
-                    <label>Реквизит:</label>
-                    <input type="text" placeholder="Реквизит" onchange="saveData()">
-                </div>
-                <div class="card-row">
-                    <label>Вход (₽):</label>
-                    <input type="number" value="0" min="0" step="0.01" onchange="calculate(${rowCounter})">
-                </div>
-                <div class="card-row">
-                    <label>% заработка:</label>
-                    <input type="number" value="11" min="0" max="100" step="0.01" onchange="calculate(${rowCounter})">
-                </div>
-                <div class="card-row">
-                    <label>Потрачено (₽):</label>
-                    <input type="number" value="0" min="0" step="0.01" onchange="calculate(${rowCounter})">
-                </div>
-                <div class="card-row">
-                    <label>Выход (₽):</label>
-                    <input type="number" value="0" min="0" step="0.01" onchange="calculate(${rowCounter})">
-                </div>
-                <div class="card-row">
-                    <label>% откупа:</label>
-                    <input type="number" value="1" min="0" max="100" step="0.01" onchange="calculate(${rowCounter})">
-                </div>
-                <div class="card-result">
-                    <div class="label">Заработано</div>
-                    <div class="value" id="earned-${rowCounter}">0.00 ₽</div>
-                </div>
-            `;
-            
-            cardsList.appendChild(card);
-            calculate(rowCounter);
-            saveData();
-            
-            // Показать haptic feedback
-            if (tg.HapticFeedback) {
-                tg.HapticFeedback.impactOccurred('light');
-            }
+            `).join('');
         }
 
-        function calculate(cardId) {
-            const card = document.getElementById(`card-${cardId}`);
-            if (!card) return;
+        function selectBank(bankId) {
+            selectedBank = bankId;
+            document.querySelectorAll('.bank-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            event.target.closest('.bank-card').classList.add('selected');
+            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+        }
+
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
             
-            const inputs = card.querySelectorAll('input');
-            const income = parseFloat(inputs[1].value) || 0;
-            const incomePercent = parseFloat(inputs[2].value) || 0;
-            const spent = parseFloat(inputs[3].value) || 0;
-            const buyback = parseFloat(inputs[4].value) || 0;
-            const buybackPercent = parseFloat(inputs[5].value) || 0;
+            event.target.classList.add('active');
+            document.getElementById(tab + 'Section').classList.add('active');
             
+            if (tab === 'history') {
+                renderHistory();
+            }
+            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+        }
+
+        function addRequisite() {
+            if (!selectedBank) {
+                if (tg.showAlert) tg.showAlert('Выберите банк');
+                return;
+            }
+            
+            const number = document.getElementById('requisiteNumber').value.trim();
+            if (!number) {
+                if (tg.showAlert) tg.showAlert('Введите номер реквизита');
+                return;
+            }
+
+            const bank = banks.find(b => b.id === selectedBank);
+            const requisite = {
+                id: Date.now(),
+                bankId: selectedBank,
+                bankName: bank.name,
+                bankIcon: bank.icon,
+                number: number,
+                createdAt: new Date().toISOString()
+            };
+
+            appData.requisites.push(requisite);
+            document.getElementById('requisiteNumber').value = '';
+            selectedBank = null;
+            document.querySelectorAll('.bank-card').forEach(card => card.classList.remove('selected'));
+            
+            renderRequisites();
+            updateRequisiteSelects();
+            saveData();
+            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+        }
+
+        function renderRequisites() {
+            const list = document.getElementById('requisitesList');
+            if (appData.requisites.length === 0) {
+                list.innerHTML = '<p style="text-align:center;color:var(--tg-theme-hint-color,#888);padding:20px;">Нет реквизитов</p>';
+                return;
+            }
+            
+            list.innerHTML = appData.requisites.map(req => `
+                <div class="requisite-item">
+                    <div class="requisite-info">
+                        <div class="requisite-bank">${req.bankIcon} ${req.bankName}</div>
+                        <div class="requisite-number">${req.number}</div>
+                    </div>
+                    <button class="btn-danger" onclick="deleteRequisite(${req.id})">Удалить</button>
+                </div>
+            `).join('');
+        }
+
+        function deleteRequisite(id) {
+            appData.requisites = appData.requisites.filter(r => r.id !== id);
+            renderRequisites();
+            updateRequisiteSelects();
+            saveData();
+            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+        }
+
+        function updateRequisiteSelects() {
+            const selects = [document.getElementById('requisiteSelect'), document.getElementById('filterRequisite')];
+            selects.forEach(select => {
+                const currentValue = select.value;
+                const isFilter = select.id === 'filterRequisite';
+                select.innerHTML = `<option value="">${isFilter ? 'Все реквизиты' : 'Выберите реквизит'}</option>` +
+                    appData.requisites.map(req => 
+                        `<option value="${req.id}">${req.bankIcon} ${req.bankName} - ${req.number}</option>`
+                    ).join('');
+                select.value = currentValue;
+            });
+        }
+
+        function calculateRecord() {
+            const income = parseFloat(document.getElementById('recordIncome').value) || 0;
+            const incomePercent = parseFloat(document.getElementById('recordIncomePercent').value) || 0;
+            const spent = parseFloat(document.getElementById('recordSpent').value) || 0;
+            const buyback = parseFloat(document.getElementById('recordBuyback').value) || 0;
+            const buybackPercent = parseFloat(document.getElementById('recordBuybackPercent').value) || 0;
+
             const earnedFromIncome = (income * incomePercent) / 100;
             const earnedFromBuyback = (buyback * buybackPercent) / 100;
             const totalEarned = earnedFromIncome + earnedFromBuyback - spent;
             
-            document.getElementById(`earned-${cardId}`).textContent = totalEarned.toFixed(2) + ' ₽';
-            
+            document.getElementById('recordEarned').textContent = totalEarned.toFixed(2) + ' ₽';
+        }
+
+        document.getElementById('recordIncome').addEventListener('input', calculateRecord);
+        document.getElementById('recordIncomePercent').addEventListener('input', calculateRecord);
+        document.getElementById('recordSpent').addEventListener('input', calculateRecord);
+        document.getElementById('recordBuyback').addEventListener('input', calculateRecord);
+        document.getElementById('recordBuybackPercent').addEventListener('input', calculateRecord);
+
+        function addRecord() {
+            const requisiteId = document.getElementById('requisiteSelect').value;
+            if (!requisiteId) {
+                if (tg.showAlert) tg.showAlert('Выберите реквизит');
+                return;
+            }
+
+            const requisite = appData.requisites.find(r => r.id == requisiteId);
+            const date = document.getElementById('recordDate').value;
+            const income = parseFloat(document.getElementById('recordIncome').value) || 0;
+            const incomePercent = parseFloat(document.getElementById('recordIncomePercent').value) || 0;
+            const spent = parseFloat(document.getElementById('recordSpent').value) || 0;
+            const buyback = parseFloat(document.getElementById('recordBuyback').value) || 0;
+            const buybackPercent = parseFloat(document.getElementById('recordBuybackPercent').value) || 0;
+
+            const earnedFromIncome = (income * incomePercent) / 100;
+            const earnedFromBuyback = (buyback * buybackPercent) / 100;
+            const totalEarned = earnedFromIncome + earnedFromBuyback - spent;
+
+            const record = {
+                id: Date.now(),
+                requisiteId: requisite.id,
+                requisiteName: `${requisite.bankIcon} ${requisite.bankName} - ${requisite.number}`,
+                date: date,
+                income: income,
+                incomePercent: incomePercent,
+                spent: spent,
+                buyback: buyback,
+                buybackPercent: buybackPercent,
+                earned: totalEarned,
+                createdAt: new Date().toISOString()
+            };
+
+            appData.records.push(record);
+
+            // Сброс формы
+            document.getElementById('recordIncome').value = 0;
+            document.getElementById('recordIncomePercent').value = 11;
+            document.getElementById('recordSpent').value = 0;
+            document.getElementById('recordBuyback').value = 0;
+            document.getElementById('recordBuybackPercent').value = 1;
+            calculateRecord();
+
             updateSummary();
             saveData();
+            if (tg.showAlert) tg.showAlert('Запись добавлена!');
+            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
         }
 
         function updateSummary() {
@@ -375,62 +653,101 @@
             let totalSpent = 0;
             let totalBuyback = 0;
             let totalEarned = 0;
-            
-            const cards = document.querySelectorAll('.card');
-            cards.forEach(card => {
-                const inputs = card.querySelectorAll('input');
-                const income = parseFloat(inputs[1].value) || 0;
-                const incomePercent = parseFloat(inputs[2].value) || 0;
-                const spent = parseFloat(inputs[3].value) || 0;
-                const buyback = parseFloat(inputs[4].value) || 0;
-                const buybackPercent = parseFloat(inputs[5].value) || 0;
-                
-                totalIncome += income;
-                totalSpent += spent;
-                totalBuyback += buyback;
-                
-                const earnedFromIncome = (income * incomePercent) / 100;
-                const earnedFromBuyback = (buyback * buybackPercent) / 100;
-                totalEarned += earnedFromIncome + earnedFromBuyback - spent;
+
+            appData.records.forEach(record => {
+                totalIncome += record.income;
+                totalSpent += record.spent;
+                totalBuyback += record.buyback;
+                totalEarned += record.earned;
             });
-            
+
             document.getElementById('totalIncome').textContent = totalIncome.toFixed(2) + ' ₽';
             document.getElementById('totalSpent').textContent = totalSpent.toFixed(2) + ' ₽';
             document.getElementById('totalBuyback').textContent = totalBuyback.toFixed(2) + ' ₽';
             document.getElementById('totalEarned').textContent = totalEarned.toFixed(2) + ' ₽';
         }
 
-        function deleteCard(cardId) {
-            const card = document.getElementById(`card-${cardId}`);
-            if (card) {
-                card.remove();
-                updateSummary();
-                saveData();
-                
-                if (tg.HapticFeedback) {
-                    tg.HapticFeedback.impactOccurred('medium');
-                }
+        function renderHistory() {
+            applyFilters();
+        }
+
+        function applyFilters() {
+            const dateFrom = document.getElementById('filterDateFrom').value;
+            const dateTo = document.getElementById('filterDateTo').value;
+            const requisiteId = document.getElementById('filterRequisite').value;
+
+            let filtered = appData.records.filter(record => {
+                if (dateFrom && record.date < dateFrom) return false;
+                if (dateTo && record.date > dateTo) return false;
+                if (requisiteId && record.requisiteId != requisiteId) return false;
+                return true;
+            });
+
+            // Сортировка по дате (новые сверху)
+            filtered.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            const list = document.getElementById('historyList');
+            if (filtered.length === 0) {
+                list.innerHTML = '<div class="card"><p style="text-align:center;color:var(--tg-theme-hint-color,#888);padding:20px;">Нет записей</p></div>';
+                return;
             }
+
+            // Группировка по датам
+            const grouped = {};
+            filtered.forEach(record => {
+                if (!grouped[record.date]) {
+                    grouped[record.date] = [];
+                }
+                grouped[record.date].push(record);
+            });
+
+            list.innerHTML = Object.keys(grouped).map(date => {
+                const records = grouped[date];
+                const dayTotal = records.reduce((sum, r) => sum + r.earned, 0);
+                
+                return `
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>📅 ${formatDate(date)}</h3>
+                            <span style="color: var(--tg-theme-link-color, #90caf9); font-weight: 700;">${dayTotal.toFixed(2)} ₽</span>
+                        </div>
+                        ${records.map(record => `
+                            <div style="background: var(--tg-theme-bg-color, #1a1a1a); padding: 12px; border-radius: 8px; margin-bottom: 10px;">
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                                    <span style="font-weight: 600;">${record.requisiteName}</span>
+                                    <button class="btn-danger" onclick="deleteRecord(${record.id})">Удалить</button>
+                                </div>
+                                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; font-size: 13px; color: var(--tg-theme-hint-color, #b0b0b0);">
+                                    <div>Вход: ${record.income.toFixed(2)} ₽</div>
+                                    <div>% заработка: ${record.incomePercent}%</div>
+                                    <div>Потрачено: ${record.spent.toFixed(2)} ₽</div>
+                                    <div>Выход: ${record.buyback.toFixed(2)} ₽</div>
+                                    <div>% откупа: ${record.buybackPercent}%</div>
+                                    <div style="color: var(--tg-theme-link-color, #90caf9); font-weight: 600;">Заработано: ${record.earned.toFixed(2)} ₽</div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function deleteRecord(id) {
+            appData.records = appData.records.filter(r => r.id !== id);
+            updateSummary();
+            renderHistory();
+            saveData();
+            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+        }
+
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            const options = { day: 'numeric', month: 'long', year: 'numeric' };
+            return date.toLocaleDateString('ru-RU', options);
         }
 
         async function saveData() {
             if (!currentUser) return;
-            
-            const cards = document.querySelectorAll('.card');
-            const data = [];
-            
-            cards.forEach(card => {
-                const inputs = card.querySelectorAll('input');
-                data.push({
-                    id: card.id,
-                    requisite: inputs[0].value,
-                    income: inputs[1].value,
-                    incomePercent: inputs[2].value,
-                    spent: inputs[3].value,
-                    buyback: inputs[4].value,
-                    buybackPercent: inputs[5].value
-                });
-            });
             
             try {
                 await fetch(`/api/data/${currentUser}`, {
@@ -439,16 +756,13 @@
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        rows: data,
-                        rowCounter: rowCounter,
+                        requisites: appData.requisites,
+                        records: appData.records,
                         userData: userData
                     })
                 });
             } catch (error) {
                 console.error('Ошибка сохранения:', error);
-                if (tg.showAlert) {
-                    tg.showAlert('Ошибка сохранения данных');
-                }
             }
         }
 
@@ -459,64 +773,20 @@
                 const response = await fetch(`/api/data/${currentUser}`);
                 const savedData = await response.json();
                 
-                if (savedData.rowCounter) {
-                    rowCounter = savedData.rowCounter;
+                if (savedData.requisites) {
+                    appData.requisites = savedData.requisites;
+                }
+                if (savedData.records) {
+                    appData.records = savedData.records;
                 }
                 
-                const cardsList = document.getElementById('cardsList');
-                cardsList.innerHTML = '';
-                
-                if (savedData.rows && savedData.rows.length > 0) {
-                    savedData.rows.forEach(item => {
-                        const cardId = parseInt(item.id.split('-')[1]);
-                        const card = document.createElement('div');
-                        card.className = 'card';
-                        card.id = item.id;
-                        
-                        card.innerHTML = `
-                            <div class="card-header">
-                                <h3>Операция #${cardId}</h3>
-                                <button class="btn-danger" onclick="deleteCard(${cardId})">Удалить</button>
-                            </div>
-                            <div class="card-row">
-                                <label>Реквизит:</label>
-                                <input type="text" value="${item.requisite}" placeholder="Реквизит" onchange="saveData()">
-                            </div>
-                            <div class="card-row">
-                                <label>Вход (₽):</label>
-                                <input type="number" value="${item.income}" min="0" step="0.01" onchange="calculate(${cardId})">
-                            </div>
-                            <div class="card-row">
-                                <label>% заработка:</label>
-                                <input type="number" value="${item.incomePercent}" min="0" max="100" step="0.01" onchange="calculate(${cardId})">
-                            </div>
-                            <div class="card-row">
-                                <label>Потрачено (₽):</label>
-                                <input type="number" value="${item.spent}" min="0" step="0.01" onchange="calculate(${cardId})">
-                            </div>
-                            <div class="card-row">
-                                <label>Выход (₽):</label>
-                                <input type="number" value="${item.buyback}" min="0" step="0.01" onchange="calculate(${cardId})">
-                            </div>
-                            <div class="card-row">
-                                <label>% откупа:</label>
-                                <input type="number" value="${item.buybackPercent}" min="0" max="100" step="0.01" onchange="calculate(${cardId})">
-                            </div>
-                            <div class="card-result">
-                                <div class="label">Заработано</div>
-                                <div class="value" id="earned-${cardId}">0.00 ₽</div>
-                            </div>
-                        `;
-                        
-                        cardsList.appendChild(card);
-                        calculate(cardId);
-                    });
-                } else {
-                    addCard();
-                }
+                renderBanks();
+                renderRequisites();
+                updateRequisiteSelects();
+                updateSummary();
             } catch (error) {
                 console.error('Ошибка загрузки:', error);
-                addCard();
+                renderBanks();
             }
         }
     </script>
