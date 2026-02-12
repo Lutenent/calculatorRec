@@ -424,6 +424,68 @@
             
             <div id="historyList"></div>
         </div>
+
+        <!-- Раздел: Админ -->
+        <div id="adminSection" class="section">
+            <div class="card">
+                <div class="card-header">
+                    <h3>👑 Админ-панель</h3>
+                </div>
+                <button class="btn btn-primary" onclick="loadAllUsers()">🔄 Загрузить пользователей</button>
+            </div>
+            
+            <div id="usersList"></div>
+            
+            <div id="adminUserData" style="display: none;">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 id="adminUserName">Пользователь</h3>
+                        <button class="btn-danger" onclick="closeAdminView()">Закрыть</button>
+                    </div>
+                    <div class="summary">
+                        <div class="summary-card income">
+                            <h3>Вход</h3>
+                            <div class="amount" id="adminTotalIncome">0 ₽</div>
+                        </div>
+                        <div class="summary-card spent">
+                            <h3>Потрачено</h3>
+                            <div class="amount" id="adminTotalSpent">0 ₽</div>
+                        </div>
+                        <div class="summary-card buyback">
+                            <h3>Выход</h3>
+                            <div class="amount" id="adminTotalBuyback">0 ₽</div>
+                        </div>
+                        <div class="summary-card earned">
+                            <h3>Заработано</h3>
+                            <div class="amount" id="adminTotalEarned">0 ₽</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Фильтры</h3>
+                    </div>
+                    <div class="card-row">
+                        <label>Дата от:</label>
+                        <input type="date" id="adminFilterDateFrom">
+                    </div>
+                    <div class="card-row">
+                        <label>Дата до:</label>
+                        <input type="date" id="adminFilterDateTo">
+                    </div>
+                    <div class="card-row">
+                        <label>Реквизит:</label>
+                        <select id="adminFilterRequisite">
+                            <option value="">Все реквизиты</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary" onclick="applyAdminFilters()">Применить</button>
+                </div>
+                
+                <div id="adminHistoryList"></div>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -431,6 +493,9 @@
         let currentUser = null;
         let userData = null;
         let selectedBank = null;
+        let isAdmin = false;
+        
+        const ADMIN_IDS = [8111977113, 7316137579];
         
         const banks = [
             { id: 'ozon', name: 'Озон', icon: '�' },
@@ -454,10 +519,17 @@
         if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
             userData = tg.initDataUnsafe.user;
             currentUser = 'tg_' + userData.id;
+            isAdmin = ADMIN_IDS.includes(userData.id);
             const firstName = userData.first_name || 'Пользователь';
             const lastName = userData.last_name || '';
             document.getElementById('userName').textContent = firstName + (lastName ? ' ' + lastName : '');
             document.getElementById('userAvatar').textContent = firstName.charAt(0).toUpperCase();
+            
+            if (isAdmin) {
+                document.querySelector('.tabs').insertAdjacentHTML('beforeend', 
+                    '<button class="tab" onclick="switchTab(\'admin\')">👑 Админ</button>');
+            }
+            
             loadData();
         } else {
             document.getElementById('userName').textContent = 'Гость';
@@ -501,6 +573,9 @@
             
             if (tab === 'history') {
                 renderHistory();
+            }
+            if (tab === 'admin' && isAdmin) {
+                // Админ панель открыта
             }
             if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
         }
@@ -786,6 +861,166 @@
                 console.error('Ошибка загрузки:', error);
                 renderBanks();
             }
+        }
+
+        // Админ функции
+        let adminViewingUser = null;
+        let adminUserData = null;
+
+        async function loadAllUsers() {
+            if (!isAdmin) return;
+            
+            try {
+                const response = await fetch('/api/admin/users');
+                const users = await response.json();
+                
+                const list = document.getElementById('usersList');
+                if (users.length === 0) {
+                    list.innerHTML = '<div class="card"><p style="text-align:center;color:var(--tg-theme-hint-color,#888);padding:20px;">Нет пользователей</p></div>';
+                    return;
+                }
+                
+                list.innerHTML = users.map(user => `
+                    <div class="requisite-item" onclick="viewUserData('${user.userId}')">
+                        <div class="requisite-info">
+                            <div class="requisite-bank">${user.userData?.first_name || 'Пользователь'} ${user.userData?.last_name || ''}</div>
+                            <div class="requisite-number">@${user.userData?.username || 'без username'} • ID: ${user.userId.replace('tg_', '')}</div>
+                        </div>
+                        <button class="btn-primary" style="padding: 8px 16px; font-size: 14px; width: auto;">Открыть</button>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Ошибка загрузки пользователей:', error);
+                if (tg.showAlert) tg.showAlert('Ошибка загрузки пользователей');
+            }
+        }
+
+        async function viewUserData(userId) {
+            if (!isAdmin) return;
+            
+            try {
+                const response = await fetch(`/api/data/${userId}`);
+                const data = await response.json();
+                
+                adminViewingUser = userId;
+                adminUserData = data;
+                
+                document.getElementById('usersList').style.display = 'none';
+                document.getElementById('adminUserData').style.display = 'block';
+                
+                const userName = data.userData ? 
+                    `${data.userData.first_name || ''} ${data.userData.last_name || ''} (@${data.userData.username || 'без username'})` : 
+                    userId;
+                document.getElementById('adminUserName').textContent = userName;
+                
+                // Установить даты
+                const today = new Date().toISOString().split('T')[0];
+                document.getElementById('adminFilterDateFrom').value = today;
+                document.getElementById('adminFilterDateTo').value = today;
+                
+                // Обновить селект реквизитов
+                const select = document.getElementById('adminFilterRequisite');
+                select.innerHTML = '<option value="">Все реквизиты</option>' +
+                    (data.requisites || []).map(req => 
+                        `<option value="${req.id}">${req.bankIcon} ${req.bankName} - ${req.number}</option>`
+                    ).join('');
+                
+                updateAdminSummary();
+                applyAdminFilters();
+                
+                if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+            } catch (error) {
+                console.error('Ошибка загрузки данных пользователя:', error);
+                if (tg.showAlert) tg.showAlert('Ошибка загрузки данных');
+            }
+        }
+
+        function closeAdminView() {
+            document.getElementById('usersList').style.display = 'block';
+            document.getElementById('adminUserData').style.display = 'none';
+            adminViewingUser = null;
+            adminUserData = null;
+        }
+
+        function updateAdminSummary() {
+            if (!adminUserData || !adminUserData.records) return;
+            
+            let totalIncome = 0;
+            let totalSpent = 0;
+            let totalBuyback = 0;
+            let totalEarned = 0;
+
+            adminUserData.records.forEach(record => {
+                totalIncome += record.income;
+                totalSpent += record.spent;
+                totalBuyback += record.buyback;
+                totalEarned += record.earned;
+            });
+
+            document.getElementById('adminTotalIncome').textContent = totalIncome.toFixed(2) + ' ₽';
+            document.getElementById('adminTotalSpent').textContent = totalSpent.toFixed(2) + ' ₽';
+            document.getElementById('adminTotalBuyback').textContent = totalBuyback.toFixed(2) + ' ₽';
+            document.getElementById('adminTotalEarned').textContent = totalEarned.toFixed(2) + ' ₽';
+        }
+
+        function applyAdminFilters() {
+            if (!adminUserData || !adminUserData.records) return;
+            
+            const dateFrom = document.getElementById('adminFilterDateFrom').value;
+            const dateTo = document.getElementById('adminFilterDateTo').value;
+            const requisiteId = document.getElementById('adminFilterRequisite').value;
+
+            let filtered = adminUserData.records.filter(record => {
+                if (dateFrom && record.date < dateFrom) return false;
+                if (dateTo && record.date > dateTo) return false;
+                if (requisiteId && record.requisiteId != requisiteId) return false;
+                return true;
+            });
+
+            filtered.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            const list = document.getElementById('adminHistoryList');
+            if (filtered.length === 0) {
+                list.innerHTML = '<div class="card"><p style="text-align:center;color:var(--tg-theme-hint-color,#888);padding:20px;">Нет записей</p></div>';
+                return;
+            }
+
+            const grouped = {};
+            filtered.forEach(record => {
+                if (!grouped[record.date]) {
+                    grouped[record.date] = [];
+                }
+                grouped[record.date].push(record);
+            });
+
+            list.innerHTML = Object.keys(grouped).map(date => {
+                const records = grouped[date];
+                const dayTotal = records.reduce((sum, r) => sum + r.earned, 0);
+                
+                return `
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>📅 ${formatDate(date)}</h3>
+                            <span style="color: var(--tg-theme-link-color, #90caf9); font-weight: 700;">${dayTotal.toFixed(2)} ₽</span>
+                        </div>
+                        ${records.map(record => `
+                            <div style="background: var(--tg-theme-bg-color, #1a1a1a); padding: 12px; border-radius: 8px; margin-bottom: 10px;">
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                                    <span style="font-weight: 600;">${record.requisiteName}</span>
+                                </div>
+                                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; font-size: 13px; color: var(--tg-theme-hint-color, #b0b0b0);">
+                                    <div>Вход: ${record.income.toFixed(2)} ₽</div>
+                                    <div>% заработка: ${record.incomePercent}%</div>
+                                    <div>Потрачено: ${record.spent.toFixed(2)} ₽</div>
+                                    <div>Выход: ${record.buyback.toFixed(2)} ₽</div>
+                                    <div>% откупа: ${record.buybackPercent}%</div>
+                                    <div style="color: var(--tg-theme-link-color, #90caf9); font-weight: 600;">Заработано: ${record.earned.toFixed(2)} ₽</div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            }).join('');
         }
     </script>
 </body>
