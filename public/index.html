@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Учёт операций по карте</title>
+    <script async src="https://telegram.org/js/telegram-widget.js?22"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1a1a1a;
+            color: #e0e0e0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+            background: #2d2d2d;
+            border-radius: 12px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+            padding: 20px;
+        }
+
+        .user-select {
+            background: #3a3a3a;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .user-select label {
+            color: #b0b0b0;
+            font-size: 0.95em;
+        }
+
+        .user-select select {
+            flex: 1;
+            min-width: 200px;
+            padding: 10px;
+            background: #2d2d2d;
+            color: #e0e0e0;
+            border: 1px solid #4a4a4a;
+            border-radius: 6px;
+            font-size: 15px;
+            cursor: pointer;
+        }
+
+        .user-select select:focus {
+            outline: none;
+            border-color: #5c6bc0;
+        }
+
+        h1 {
+            text-align: center;
+            color: #e0e0e0;
+            margin-bottom: 25px;
+            font-size: 1.8em;
+            font-weight: 600;
+        }
+
+        .summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
+            margin-bottom: 25px;
+        }
+
+        .summary-card {
+            padding: 18px;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid #4a4a4a;
+            background: #3a3a3a;
+        }
+
+        .summary-card.income {
+            background: #1b3a1b;
+            border-color: #2e7d32;
+        }
+
+        .summary-card.spent {
+            background: #3a1b1b;
+            border-color: #c62828;
+        }
+
+        .summary-card.buyback {
+            background: #1b2a3a;
+            border-color: #1976d2;
+        }
+
+        .summary-card.earned {
+            background: #3a2e1b;
+            border-color: #f57c00;
+        }
+
+        .summary-card h3 {
+            font-size: 0.85em;
+            margin-bottom: 8px;
+            color: #b0b0b0;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .summary-card .amount {
+            font-size: 1.6em;
+            font-weight: 700;
+            color: #e0e0e0;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+            margin-top: 20px;
+            border-radius: 8px;
+            border: 1px solid #4a4a4a;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 900px;
+        }
+
+        th {
+            background: #3a3a3a;
+            color: #e0e0e0;
+            padding: 14px 10px;
+            text-align: left;
+            font-weight: 500;
+            font-size: 0.9em;
+            white-space: nowrap;
+            border-bottom: 2px solid #4a4a4a;
+        }
+
+        td {
+            padding: 10px;
+            border-bottom: 1px solid #3a3a3a;
+            background: #2d2d2d;
+        }
+
+        tr:hover td {
+            background-color: #353535;
+        }
+
+        input[type="text"], input[type="number"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #4a4a4a;
+            border-radius: 4px;
+            font-size: 14px;
+            transition: border-color 0.2s;
+            background: #1a1a1a;
+            color: #e0e0e0;
+        }
+
+        input[type="text"]:focus, input[type="number"]:focus {
+            outline: none;
+            border-color: #5c6bc0;
+            box-shadow: 0 0 0 2px rgba(92, 107, 192, 0.2);
+        }
+
+        .calculated {
+            background-color: #3a3a3a;
+            font-weight: 600;
+            color: #90caf9;
+            text-align: center;
+        }
+
+        button {
+            background: #5c6bc0;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 15px;
+            margin-top: 20px;
+            transition: background 0.2s;
+            font-weight: 500;
+        }
+
+        button:hover {
+            background: #3949ab;
+        }
+
+        .delete-btn {
+            background: #d32f2f;
+            padding: 6px 12px;
+            font-size: 13px;
+            margin: 0;
+        }
+
+        .delete-btn:hover {
+            background: #b71c1c;
+        }
+
+        .login-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 80vh;
+            text-align: center;
+        }
+
+        .login-screen h2 {
+            margin-bottom: 20px;
+            color: #e0e0e0;
+        }
+
+        .login-screen p {
+            margin-bottom: 30px;
+            color: #b0b0b0;
+        }
+
+        .user-info {
+            background: #3a3a3a;
+            padding: 12px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 15px;
+        }
+
+        .user-info .user-details {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .user-info img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+        }
+
+        .user-info .user-name {
+            color: #e0e0e0;
+            font-weight: 500;
+        }
+
+        .logout-btn {
+            background: #d32f2f;
+            padding: 8px 16px;
+            font-size: 14px;
+            margin: 0;
+        }
+
+        .logout-btn:hover {
+            background: #b71c1c;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .mobile-card {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+
+            .container {
+                padding: 15px;
+            }
+
+            h1 {
+                font-size: 1.4em;
+                margin-bottom: 20px;
+            }
+
+            .summary {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
+            }
+
+            .summary-card {
+                padding: 12px;
+            }
+
+            .summary-card h3 {
+                font-size: 0.75em;
+            }
+
+            .summary-card .amount {
+                font-size: 1.3em;
+            }
+
+            .table-wrapper {
+                display: none;
+            }
+
+            .mobile-card {
+                display: block;
+                background: #2d2d2d;
+                border: 1px solid #4a4a4a;
+                border-radius: 8px;
+                padding: 15px;
+                margin-bottom: 15px;
+            }
+
+            .mobile-card-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 15px;
+                padding-bottom: 10px;
+                border-bottom: 1px solid #4a4a4a;
+            }
+
+            .mobile-card-header h3 {
+                color: #90caf9;
+                font-size: 1.1em;
+                margin: 0;
+            }
+
+            .mobile-card-row {
+                display: flex;
+                justify-content: space-between;
+                margin-bottom: 10px;
+            }
+
+            .mobile-card-row label {
+                color: #b0b0b0;
+                font-size: 0.9em;
+            }
+
+            .mobile-card-row input {
+                width: 60%;
+                padding: 6px;
+                font-size: 13px;
+            }
+
+            .mobile-card-result {
+                background: #3a3a3a;
+                padding: 10px;
+                border-radius: 6px;
+                margin-top: 10px;
+                text-align: center;
+            }
+
+            .mobile-card-result .label {
+                color: #b0b0b0;
+                font-size: 0.85em;
+                margin-bottom: 5px;
+            }
+
+            .mobile-card-result .value {
+                color: #90caf9;
+                font-size: 1.3em;
+                font-weight: 600;
+            }
+
+            button {
+                width: 100%;
+                padding: 12px;
+            }
+
+            .delete-btn {
+                padding: 8px 16px;
+                font-size: 13px;
+                width: auto;
+            }
+
+            .user-info {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .user-info .user-details {
+                flex-direction: column;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .summary {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="loginScreen" class="login-screen">
+            <h2>💳 Учёт операций по карте</h2>
+            <p>Войдите через Telegram, чтобы начать работу</p>
+            <script async src="https://telegram.org/js/telegram-widget.js?22" 
+                    data-telegram-login="flyer_amnyam_bot" 
+                    data-size="large" 
+                    data-onauth="onTelegramAuth(user)" 
+                    data-request-access="write">
+            </script>
+        </div>
+
+        <div id="appContent" class="hidden">
+            <h1>💳 Учёт операций по карте</h1>
+            
+            <div class="user-info">
+                <div class="user-details">
+                    <img id="userPhoto" src="" alt="User">
+                    <span class="user-name" id="userName"></span>
+                </div>
+                <button class="logout-btn" onclick="logout()">Выйти</button>
+            </div>
+        
+        <div class="summary">
+            <div class="summary-card income">
+                <h3>Вход</h3>
+                <div class="amount" id="totalIncome">0 ₽</div>
+            </div>
+            <div class="summary-card spent">
+                <h3>Потрачено</h3>
+                <div class="amount" id="totalSpent">0 ₽</div>
+            </div>
+            <div class="summary-card buyback">
+                <h3>Выход</h3>
+                <div class="amount" id="totalBuyback">0 ₽</div>
+            </div>
+            <div class="summary-card earned">
+                <h3>Заработано</h3>
+                <div class="amount" id="totalEarned">0 ₽</div>
+            </div>
+        </div>
+
+            <div class="table-wrapper">
+                <table id="transactionTable">
+                    <thead>
+                        <tr>
+                            <th>Реквизит</th>
+                            <th>Вход (₽)</th>
+                            <th>% заработка</th>
+                            <th>Заработано с входа (₽)</th>
+                            <th>Потрачено (₽)</th>
+                            <th>Выход (₽)</th>
+                            <th>% откупа</th>
+                            <th>Заработано с выхода (₽)</th>
+                            <th>Заработано (₽)</th>
+                            <th>Действие</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                    </tbody>
+                </table>
+            </div>
+
+            <div id="mobileCards"></div>
+
+            <button onclick="addRow()">➕ Добавить строку</button>
+        </div>
+    </div>
+
+    <script>
+        let rowCounter = 0;
+        let currentUser = null;
+        let userData = null;
+
+        function onTelegramAuth(user) {
+            userData = user;
+            currentUser = 'tg_' + user.id;
+            
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('appContent').classList.remove('hidden');
+            
+            document.getElementById('userName').textContent = user.first_name + (user.last_name ? ' ' + user.last_name : '');
+            document.getElementById('userPhoto').src = user.photo_url || 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23666"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>';
+            
+            // Сохранить сессию
+            localStorage.setItem('telegramUser', JSON.stringify(user));
+            
+            loadData();
+        }
+
+        function logout() {
+            localStorage.removeItem('telegramUser');
+            currentUser = null;
+            userData = null;
+            document.getElementById('loginScreen').classList.remove('hidden');
+            document.getElementById('appContent').classList.add('hidden');
+            document.getElementById('tableBody').innerHTML = '';
+            document.getElementById('mobileCards').innerHTML = '';
+        }
+
+        function checkAuth() {
+            const savedUser = localStorage.getItem('telegramUser');
+            if (savedUser) {
+                const user = JSON.parse(savedUser);
+                onTelegramAuth(user);
+            }
+        }
+
+        function addRow() {
+            rowCounter++;
+            const tbody = document.getElementById('tableBody');
+            const row = tbody.insertRow();
+            row.id = `row-${rowCounter}`;
+            
+            row.innerHTML = `
+                <td><input type="text" placeholder="Введите реквизит" onchange="saveData()"></td>
+                <td><input type="number" value="0" min="0" step="0.01" onchange="calculate(${rowCounter})"></td>
+                <td><input type="number" value="11" min="0" max="100" step="0.01" onchange="calculate(${rowCounter})"></td>
+                <td class="calculated">0.00</td>
+                <td><input type="number" value="0" min="0" step="0.01" onchange="calculate(${rowCounter})"></td>
+                <td><input type="number" value="0" min="0" step="0.01" onchange="calculate(${rowCounter})"></td>
+                <td><input type="number" value="1" min="0" max="100" step="0.01" onchange="calculate(${rowCounter})"></td>
+                <td class="calculated">0.00</td>
+                <td class="calculated">0.00</td>
+                <td><button class="delete-btn" onclick="deleteRow(${rowCounter})">Удалить</button></td>
+            `;
+            
+            createMobileCard(rowCounter);
+            calculate(rowCounter);
+            saveData();
+        }
+
+        function createMobileCard(rowId) {
+            const mobileCards = document.getElementById('mobileCards');
+            const card = document.createElement('div');
+            card.className = 'mobile-card';
+            card.id = `mobile-card-${rowId}`;
+            
+            card.innerHTML = `
+                <div class="mobile-card-header">
+                    <h3>Операция #${rowId}</h3>
+                    <button class="delete-btn" onclick="deleteRow(${rowId})">Удалить</button>
+                </div>
+                <div class="mobile-card-row">
+                    <label>Реквизит:</label>
+                    <input type="text" placeholder="Реквизит" onchange="syncToTable(${rowId}, 0, this.value); saveData()">
+                </div>
+                <div class="mobile-card-row">
+                    <label>Вход (₽):</label>
+                    <input type="number" value="0" min="0" step="0.01" onchange="syncToTable(${rowId}, 1, this.value); calculate(${rowId})">
+                </div>
+                <div class="mobile-card-row">
+                    <label>% заработка:</label>
+                    <input type="number" value="11" min="0" max="100" step="0.01" onchange="syncToTable(${rowId}, 2, this.value); calculate(${rowId})">
+                </div>
+                <div class="mobile-card-row">
+                    <label>Потрачено (₽):</label>
+                    <input type="number" value="0" min="0" step="0.01" onchange="syncToTable(${rowId}, 4, this.value); calculate(${rowId})">
+                </div>
+                <div class="mobile-card-row">
+                    <label>Выход (₽):</label>
+                    <input type="number" value="0" min="0" step="0.01" onchange="syncToTable(${rowId}, 5, this.value); calculate(${rowId})">
+                </div>
+                <div class="mobile-card-row">
+                    <label>% откупа:</label>
+                    <input type="number" value="1" min="0" max="100" step="0.01" onchange="syncToTable(${rowId}, 6, this.value); calculate(${rowId})">
+                </div>
+                <div class="mobile-card-result">
+                    <div class="label">Заработано</div>
+                    <div class="value" id="mobile-earned-${rowId}">0.00 ₽</div>
+                </div>
+            `;
+            
+            mobileCards.appendChild(card);
+        }
+
+        function syncToTable(rowId, cellIndex, value) {
+            const row = document.getElementById(`row-${rowId}`);
+            if (row) {
+                const input = row.cells[cellIndex].querySelector('input');
+                if (input) {
+                    input.value = value;
+                }
+            }
+        }
+
+        function calculate(rowId) {
+            const row = document.getElementById(`row-${rowId}`);
+            if (!row) return;
+            
+            const cells = row.cells;
+            const income = parseFloat(cells[1].querySelector('input').value) || 0;
+            const incomePercent = parseFloat(cells[2].querySelector('input').value) || 0;
+            const spent = parseFloat(cells[4].querySelector('input').value) || 0;
+            const buyback = parseFloat(cells[5].querySelector('input').value) || 0;
+            const buybackPercent = parseFloat(cells[6].querySelector('input').value) || 0;
+            
+            const earnedFromIncome = (income * incomePercent) / 100;
+            const earnedFromBuyback = (buyback * buybackPercent) / 100;
+            const totalEarned = earnedFromIncome + earnedFromBuyback - spent;
+            
+            cells[3].textContent = earnedFromIncome.toFixed(2);
+            cells[7].textContent = earnedFromBuyback.toFixed(2);
+            cells[8].textContent = totalEarned.toFixed(2);
+            
+            // Обновить мобильную карточку
+            const mobileEarned = document.getElementById(`mobile-earned-${rowId}`);
+            if (mobileEarned) {
+                mobileEarned.textContent = totalEarned.toFixed(2) + ' ₽';
+            }
+            
+            updateSummary();
+            saveData();
+        }
+
+        function updateSummary() {
+            let totalIncome = 0;
+            let totalSpent = 0;
+            let totalBuyback = 0;
+            let totalEarnedFromIncome = 0;
+            let totalEarnedFromBuyback = 0;
+            
+            const rows = document.getElementById('tableBody').rows;
+            for (let row of rows) {
+                const cells = row.cells;
+                totalIncome += parseFloat(cells[1].querySelector('input').value) || 0;
+                totalSpent += parseFloat(cells[4].querySelector('input').value) || 0;
+                totalBuyback += parseFloat(cells[5].querySelector('input').value) || 0;
+                totalEarnedFromIncome += parseFloat(cells[3].textContent) || 0;
+                totalEarnedFromBuyback += parseFloat(cells[7].textContent) || 0;
+            }
+            
+            const totalEarned = totalEarnedFromIncome + totalEarnedFromBuyback - totalSpent;
+            
+            document.getElementById('totalIncome').textContent = totalIncome.toFixed(2) + ' ₽';
+            document.getElementById('totalSpent').textContent = totalSpent.toFixed(2) + ' ₽';
+            document.getElementById('totalBuyback').textContent = totalBuyback.toFixed(2) + ' ₽';
+            document.getElementById('totalEarned').textContent = totalEarned.toFixed(2) + ' ₽';
+        }
+
+        function deleteRow(rowId) {
+            const row = document.getElementById(`row-${rowId}`);
+            const mobileCard = document.getElementById(`mobile-card-${rowId}`);
+            
+            if (row) {
+                row.remove();
+            }
+            if (mobileCard) {
+                mobileCard.remove();
+            }
+            
+            updateSummary();
+            saveData();
+        }
+
+        async function saveData() {
+            if (!currentUser) return;
+            
+            const rows = document.getElementById('tableBody').rows;
+            const data = [];
+            
+            for (let row of rows) {
+                const cells = row.cells;
+                const inputs = row.querySelectorAll('input');
+                data.push({
+                    id: row.id,
+                    requisite: inputs[0].value,
+                    income: inputs[1].value,
+                    incomePercent: inputs[2].value,
+                    spent: inputs[3].value,
+                    buyback: inputs[4].value,
+                    buybackPercent: inputs[5].value
+                });
+            }
+            
+            try {
+                await fetch(`/api/data/${currentUser}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        rows: data,
+                        rowCounter: rowCounter,
+                        userData: userData
+                    })
+                });
+            } catch (error) {
+                console.error('Ошибка сохранения:', error);
+            }
+        }
+
+        async function loadData() {
+            try {
+                const response = await fetch(`/api/data/${currentUser}`);
+                const userData = await response.json();
+                
+                if (userData.rowCounter) {
+                    rowCounter = userData.rowCounter;
+                }
+                
+                // Очистить таблицу
+                document.getElementById('tableBody').innerHTML = '';
+                
+                if (userData.rows && userData.rows.length > 0) {
+                    userData.rows.forEach(item => {
+                        const tbody = document.getElementById('tableBody');
+                        const row = tbody.insertRow();
+                        const id = parseInt(item.id.split('-')[1]);
+                        row.id = item.id;
+                        
+                        row.innerHTML = `
+                            <td><input type="text" value="${item.requisite}" placeholder="Введите реквизит" onchange="saveData()"></td>
+                            <td><input type="number" value="${item.income}" min="0" step="0.01" onchange="calculate(${id})"></td>
+                            <td><input type="number" value="${item.incomePercent}" min="0" max="100" step="0.01" onchange="calculate(${id})"></td>
+                            <td class="calculated">0.00</td>
+                            <td><input type="number" value="${item.spent}" min="0" step="0.01" onchange="calculate(${id})"></td>
+                            <td><input type="number" value="${item.buyback}" min="0" step="0.01" onchange="calculate(${id})"></td>
+                            <td><input type="number" value="${item.buybackPercent}" min="0" max="100" step="0.01" onchange="calculate(${id})"></td>
+                            <td class="calculated">0.00</td>
+                            <td class="calculated">0.00</td>
+                            <td><button class="delete-btn" onclick="deleteRow(${id})">Удалить</button></td>
+                        `;
+                        
+                        calculate(id);
+                    });
+                } else {
+                    addRow();
+                }
+            } catch (error) {
+                console.error('Ошибка загрузки:', error);
+                addRow();
+            }
+        }
+
+        function switchUser() {
+            currentUser = document.getElementById('userSelect').value;
+            loadData();
+        }
+
+        window.onload = function() {
+            loadData();
+        };
+    </script>
+</body>
+</html>
+
+        async function loadData() {
+            if (!currentUser) return;
+            
+            try {
+                const response = await fetch(`/api/data/${currentUser}`);
+                const savedData = await response.json();
+                
+                if (savedData.rowCounter) {
+                    rowCounter = savedData.rowCounter;
+                }
+                
+                // Очистить таблицу и карточки
+                document.getElementById('tableBody').innerHTML = '';
+                document.getElementById('mobileCards').innerHTML = '';
+                
+                if (savedData.rows && savedData.rows.length > 0) {
+                    savedData.rows.forEach(item => {
+                        const tbody = document.getElementById('tableBody');
+                        const row = tbody.insertRow();
+                        const id = parseInt(item.id.split('-')[1]);
+                        row.id = item.id;
+                        
+                        row.innerHTML = `
+                            <td><input type="text" value="${item.requisite}" placeholder="Введите реквизит" onchange="saveData()"></td>
+                            <td><input type="number" value="${item.income}" min="0" step="0.01" onchange="calculate(${id})"></td>
+                            <td><input type="number" value="${item.incomePercent}" min="0" max="100" step="0.01" onchange="calculate(${id})"></td>
+                            <td class="calculated">0.00</td>
+                            <td><input type="number" value="${item.spent}" min="0" step="0.01" onchange="calculate(${id})"></td>
+                            <td><input type="number" value="${item.buyback}" min="0" step="0.01" onchange="calculate(${id})"></td>
+                            <td><input type="number" value="${item.buybackPercent}" min="0" max="100" step="0.01" onchange="calculate(${id})"></td>
+                            <td class="calculated">0.00</td>
+                            <td class="calculated">0.00</td>
+                            <td><button class="delete-btn" onclick="deleteRow(${id})">Удалить</button></td>
+                        `;
+                        
+                        // Создать мобильную карточку
+                        const mobileCards = document.getElementById('mobileCards');
+                        const card = document.createElement('div');
+                        card.className = 'mobile-card';
+                        card.id = `mobile-card-${id}`;
+                        
+                        card.innerHTML = `
+                            <div class="mobile-card-header">
+                                <h3>Операция #${id}</h3>
+                                <button class="delete-btn" onclick="deleteRow(${id})">Удалить</button>
+                            </div>
+                            <div class="mobile-card-row">
+                                <label>Реквизит:</label>
+                                <input type="text" value="${item.requisite}" placeholder="Реквизит" onchange="syncToTable(${id}, 0, this.value); saveData()">
+                            </div>
+                            <div class="mobile-card-row">
+                                <label>Вход (₽):</label>
+                                <input type="number" value="${item.income}" min="0" step="0.01" onchange="syncToTable(${id}, 1, this.value); calculate(${id})">
+                            </div>
+                            <div class="mobile-card-row">
+                                <label>% заработка:</label>
+                                <input type="number" value="${item.incomePercent}" min="0" max="100" step="0.01" onchange="syncToTable(${id}, 2, this.value); calculate(${id})">
+                            </div>
+                            <div class="mobile-card-row">
+                                <label>Потрачено (₽):</label>
+                                <input type="number" value="${item.spent}" min="0" step="0.01" onchange="syncToTable(${id}, 4, this.value); calculate(${id})">
+                            </div>
+                            <div class="mobile-card-row">
+                                <label>Выход (₽):</label>
+                                <input type="number" value="${item.buyback}" min="0" step="0.01" onchange="syncToTable(${id}, 5, this.value); calculate(${id})">
+                            </div>
+                            <div class="mobile-card-row">
+                                <label>% откупа:</label>
+                                <input type="number" value="${item.buybackPercent}" min="0" max="100" step="0.01" onchange="syncToTable(${id}, 6, this.value); calculate(${id})">
+                            </div>
+                            <div class="mobile-card-result">
+                                <div class="label">Заработано</div>
+                                <div class="value" id="mobile-earned-${id}">0.00 ₽</div>
+                            </div>
+                        `;
+                        
+                        mobileCards.appendChild(card);
+                        calculate(id);
+                    });
+                } else {
+                    addRow();
+                }
+            } catch (error) {
+                console.error('Ошибка загрузки:', error);
+                addRow();
+            }
+        }
+
+        window.onload = function() {
+            checkAuth();
+        };
+    </script>
+</body>
+</html>
