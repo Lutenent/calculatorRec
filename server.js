@@ -76,6 +76,22 @@ app.post('/api/data/:userId', (req, res) => {
     res.json({ success: true });
 });
 
+// API для админов - получить список всех пользователей
+app.get('/api/admin/users', (req, res) => {
+    try {
+        const data = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
+        const users = Object.keys(data).map(userId => ({
+            userId: userId,
+            userData: data[userId].userData,
+            recordsCount: data[userId].records?.length || 0,
+            requisitesCount: data[userId].requisites?.length || 0
+        }));
+        res.json(users);
+    } catch (error) {
+        res.json([]);
+    }
+});
+
 // Настройка webhook для продакшена
 if (useWebhook) {
     const WEBHOOK_URL = `${WEB_APP_URL}/bot${BOT_TOKEN}`;
