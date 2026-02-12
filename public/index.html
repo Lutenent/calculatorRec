@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Учёт операций по карте</title>
-    <script async src="https://telegram.org/js/telegram-widget.js?22"></script>
     <style>
         * {
             margin: 0;
@@ -401,12 +400,7 @@
         <div id="loginScreen" class="login-screen">
             <h2>💳 Учёт операций по карте</h2>
             <p>Войдите через Telegram, чтобы начать работу</p>
-            <script async src="https://telegram.org/js/telegram-widget.js?22" 
-                    data-telegram-login="flyer_amnyam_bot" 
-                    data-size="large" 
-                    data-onauth="onTelegramAuth(user)" 
-                    data-request-access="write">
-            </script>
+            <div id="telegram-login-flyer_amnyam_bot"></div>
         </div>
 
         <div id="appContent" class="hidden">
@@ -832,8 +826,24 @@
             }
         }
 
+        // Загрузить Telegram виджет
+        function loadTelegramWidget() {
+            const script = document.createElement('script');
+            script.src = 'https://telegram.org/js/telegram-widget.js?22';
+            script.setAttribute('data-telegram-login', 'flyer_amnyam_bot');
+            script.setAttribute('data-size', 'large');
+            script.setAttribute('data-onauth', 'onTelegramAuth(user)');
+            script.setAttribute('data-request-access', 'write');
+            script.async = true;
+            document.getElementById('telegram-login-flyer_amnyam_bot').appendChild(script);
+        }
+
         window.onload = function() {
             checkAuth();
+            // Загрузить виджет только если пользователь не авторизован
+            if (!localStorage.getItem('telegramUser')) {
+                loadTelegramWidget();
+            }
         };
     </script>
 </body>
