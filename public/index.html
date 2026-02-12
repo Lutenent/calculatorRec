@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Учёт операций по карте</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         * {
             margin: 0;
@@ -28,37 +29,66 @@
             padding: 20px;
         }
 
-        .user-select {
+        .login-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 80vh;
+            text-align: center;
+        }
+
+        .login-screen h2 {
+            margin-bottom: 20px;
+            color: #e0e0e0;
+        }
+
+        .login-screen p {
+            margin-bottom: 30px;
+            color: #b0b0b0;
+        }
+
+        .user-info {
             background: #3a3a3a;
-            padding: 15px;
+            padding: 12px 20px;
             border-radius: 8px;
-            margin-bottom: 25px;
+            margin-bottom: 20px;
             display: flex;
             align-items: center;
+            justify-content: space-between;
             gap: 15px;
-            flex-wrap: wrap;
         }
 
-        .user-select label {
-            color: #b0b0b0;
-            font-size: 0.95em;
+        .user-info .user-details {
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
 
-        .user-select select {
-            flex: 1;
-            min-width: 200px;
-            padding: 10px;
-            background: #2d2d2d;
+        .user-info img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+        }
+
+        .user-info .user-name {
             color: #e0e0e0;
-            border: 1px solid #4a4a4a;
-            border-radius: 6px;
-            font-size: 15px;
-            cursor: pointer;
+            font-weight: 500;
         }
 
-        .user-select select:focus {
-            outline: none;
-            border-color: #5c6bc0;
+        .logout-btn {
+            background: #d32f2f;
+            padding: 8px 16px;
+            font-size: 14px;
+            margin: 0;
+        }
+
+        .logout-btn:hover {
+            background: #b71c1c;
+        }
+
+        .hidden {
+            display: none;
         }
 
         h1 {
@@ -205,68 +235,6 @@
             background: #b71c1c;
         }
 
-        .login-screen {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 80vh;
-            text-align: center;
-        }
-
-        .login-screen h2 {
-            margin-bottom: 20px;
-            color: #e0e0e0;
-        }
-
-        .login-screen p {
-            margin-bottom: 30px;
-            color: #b0b0b0;
-        }
-
-        .user-info {
-            background: #3a3a3a;
-            padding: 12px 20px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 15px;
-        }
-
-        .user-info .user-details {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .user-info img {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-        }
-
-        .user-info .user-name {
-            color: #e0e0e0;
-            font-weight: 500;
-        }
-
-        .logout-btn {
-            background: #d32f2f;
-            padding: 8px 16px;
-            font-size: 14px;
-            margin: 0;
-        }
-
-        .logout-btn:hover {
-            background: #b71c1c;
-        }
-
-        .hidden {
-            display: none;
-        }
-
         .mobile-card {
             display: none;
         }
@@ -399,8 +367,15 @@
     <div class="container">
         <div id="loginScreen" class="login-screen">
             <h2>💳 Учёт операций по карте</h2>
-            <p>Войдите через Telegram, чтобы начать работу</p>
-            <div id="telegram-login-flyer_amnyam_bot"></div>
+            <p>Для начала работы откройте бота в Telegram</p>
+            <a href="https://t.me/flyer_amnyam_bot" target="_blank">
+                <button style="background: #0088cc; padding: 15px 30px; font-size: 16px; margin-top: 20px;">
+                    📱 Открыть бота @flyer_amnyam_bot
+                </button>
+            </a>
+            <p style="margin-top: 20px; font-size: 0.9em; color: #888;">
+                Нажмите /start в боте, затем кнопку "Открыть приложение"
+            </p>
         </div>
 
         <div id="appContent" class="hidden">
@@ -414,24 +389,24 @@
                 <button class="logout-btn" onclick="logout()">Выйти</button>
             </div>
         
-        <div class="summary">
-            <div class="summary-card income">
-                <h3>Вход</h3>
-                <div class="amount" id="totalIncome">0 ₽</div>
+            <div class="summary">
+                <div class="summary-card income">
+                    <h3>Вход</h3>
+                    <div class="amount" id="totalIncome">0 ₽</div>
+                </div>
+                <div class="summary-card spent">
+                    <h3>Потрачено</h3>
+                    <div class="amount" id="totalSpent">0 ₽</div>
+                </div>
+                <div class="summary-card buyback">
+                    <h3>Выход</h3>
+                    <div class="amount" id="totalBuyback">0 ₽</div>
+                </div>
+                <div class="summary-card earned">
+                    <h3>Заработано</h3>
+                    <div class="amount" id="totalEarned">0 ₽</div>
+                </div>
             </div>
-            <div class="summary-card spent">
-                <h3>Потрачено</h3>
-                <div class="amount" id="totalSpent">0 ₽</div>
-            </div>
-            <div class="summary-card buyback">
-                <h3>Выход</h3>
-                <div class="amount" id="totalBuyback">0 ₽</div>
-            </div>
-            <div class="summary-card earned">
-                <h3>Заработано</h3>
-                <div class="amount" id="totalEarned">0 ₽</div>
-            </div>
-        </div>
 
             <div class="table-wrapper">
                 <table id="transactionTable">
@@ -465,6 +440,20 @@
         let currentUser = null;
         let userData = null;
 
+        // Инициализация Telegram Web App
+        let tg = window.Telegram.WebApp;
+        
+        function initTelegramAuth() {
+            if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+                const user = tg.initDataUnsafe.user;
+                onTelegramAuth(user);
+                tg.expand();
+                tg.ready();
+            } else {
+                checkAuth();
+            }
+        }
+
         function onTelegramAuth(user) {
             userData = user;
             currentUser = 'tg_' + user.id;
@@ -473,11 +462,14 @@
             document.getElementById('appContent').classList.remove('hidden');
             
             document.getElementById('userName').textContent = user.first_name + (user.last_name ? ' ' + user.last_name : '');
-            document.getElementById('userPhoto').src = user.photo_url || 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23666"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>';
             
-            // Сохранить сессию
+            if (user.photo_url) {
+                document.getElementById('userPhoto').src = user.photo_url;
+            } else {
+                document.getElementById('userPhoto').src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23666"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>';
+            }
+            
             localStorage.setItem('telegramUser', JSON.stringify(user));
-            
             loadData();
         }
 
@@ -596,7 +588,6 @@
             cells[7].textContent = earnedFromBuyback.toFixed(2);
             cells[8].textContent = totalEarned.toFixed(2);
             
-            // Обновить мобильную карточку
             const mobileEarned = document.getElementById(`mobile-earned-${rowId}`);
             if (mobileEarned) {
                 mobileEarned.textContent = totalEarned.toFixed(2) + ' ₽';
@@ -684,61 +675,6 @@
         }
 
         async function loadData() {
-            try {
-                const response = await fetch(`/api/data/${currentUser}`);
-                const userData = await response.json();
-                
-                if (userData.rowCounter) {
-                    rowCounter = userData.rowCounter;
-                }
-                
-                // Очистить таблицу
-                document.getElementById('tableBody').innerHTML = '';
-                
-                if (userData.rows && userData.rows.length > 0) {
-                    userData.rows.forEach(item => {
-                        const tbody = document.getElementById('tableBody');
-                        const row = tbody.insertRow();
-                        const id = parseInt(item.id.split('-')[1]);
-                        row.id = item.id;
-                        
-                        row.innerHTML = `
-                            <td><input type="text" value="${item.requisite}" placeholder="Введите реквизит" onchange="saveData()"></td>
-                            <td><input type="number" value="${item.income}" min="0" step="0.01" onchange="calculate(${id})"></td>
-                            <td><input type="number" value="${item.incomePercent}" min="0" max="100" step="0.01" onchange="calculate(${id})"></td>
-                            <td class="calculated">0.00</td>
-                            <td><input type="number" value="${item.spent}" min="0" step="0.01" onchange="calculate(${id})"></td>
-                            <td><input type="number" value="${item.buyback}" min="0" step="0.01" onchange="calculate(${id})"></td>
-                            <td><input type="number" value="${item.buybackPercent}" min="0" max="100" step="0.01" onchange="calculate(${id})"></td>
-                            <td class="calculated">0.00</td>
-                            <td class="calculated">0.00</td>
-                            <td><button class="delete-btn" onclick="deleteRow(${id})">Удалить</button></td>
-                        `;
-                        
-                        calculate(id);
-                    });
-                } else {
-                    addRow();
-                }
-            } catch (error) {
-                console.error('Ошибка загрузки:', error);
-                addRow();
-            }
-        }
-
-        function switchUser() {
-            currentUser = document.getElementById('userSelect').value;
-            loadData();
-        }
-
-        window.onload = function() {
-            loadData();
-        };
-    </script>
-</body>
-</html>
-
-        async function loadData() {
             if (!currentUser) return;
             
             try {
@@ -749,7 +685,6 @@
                     rowCounter = savedData.rowCounter;
                 }
                 
-                // Очистить таблицу и карточки
                 document.getElementById('tableBody').innerHTML = '';
                 document.getElementById('mobileCards').innerHTML = '';
                 
@@ -773,7 +708,6 @@
                             <td><button class="delete-btn" onclick="deleteRow(${id})">Удалить</button></td>
                         `;
                         
-                        // Создать мобильную карточку
                         const mobileCards = document.getElementById('mobileCards');
                         const card = document.createElement('div');
                         card.className = 'mobile-card';
@@ -826,24 +760,8 @@
             }
         }
 
-        // Загрузить Telegram виджет
-        function loadTelegramWidget() {
-            const script = document.createElement('script');
-            script.src = 'https://telegram.org/js/telegram-widget.js?22';
-            script.setAttribute('data-telegram-login', 'flyer_amnyam_bot');
-            script.setAttribute('data-size', 'large');
-            script.setAttribute('data-onauth', 'onTelegramAuth(user)');
-            script.setAttribute('data-request-access', 'write');
-            script.async = true;
-            document.getElementById('telegram-login-flyer_amnyam_bot').appendChild(script);
-        }
-
         window.onload = function() {
-            checkAuth();
-            // Загрузить виджет только если пользователь не авторизован
-            if (!localStorage.getItem('telegramUser')) {
-                loadTelegramWidget();
-            }
+            initTelegramAuth();
         };
     </script>
 </body>
