@@ -10,8 +10,9 @@ const PORT = process.env.PORT || 3000;
 const BOT_TOKEN = '8292401321:AAFqU6moO8hum0_E0CDow6bgvQ6xcoGprsM';
 const WEB_APP_URL = process.env.WEB_APP_URL || 'https://calculatorrec.onrender.com';
 
-// Инициализация бота
-const bot = new TelegramBot(BOT_TOKEN, { polling: true });
+// Используем webhook на продакшене, polling локально
+const useWebhook = process.env.NODE_ENV === 'production' || process.env.USE_WEBHOOK === 'true';
+const bot = new TelegramBot(BOT_TOKEN, { polling: !useWebhook });
 
 // Хранилище временных токенов
 const authTokens = new Map();
@@ -75,9 +76,30 @@ app.post('/api/data/:userId', (req, res) => {
     res.json({ success: true });
 });
 
-app.listen(PORT, () => {
-    console.log(`Сервер запущен на порту ${PORT}`);
-    console.log(`Бот @flyer_amnyam_bot активен`);
-});
+// Настройка webhook для продакшена
+if (useWebhook) {
+    const WEBHOOK_URL = `${WEB_APP_URL}/bot${BOT_TOKEN}`;
+    
+    app.post(`/bot${BOT_TOKEN}`, (req, res) => {
+        bot.processUpdate(req.body);
+        res.sendStatus(200);
+    });
+    
+    app.listen(PORT, async () => {
+        console.log(`Сервер запущен на порту ${PORT}`);
+        console.log(`Бот @flyer_amnyam_bot активен (webhook mode)`);
+        try {
+            await bot.setWebHook(WEBHOOK_URL);
+            console.log(`Webhook установлен: ${WEBHOOK_URL}`);
+        } catch (error) {
+            console.error('Ошибка установки webhook:', error);
+        }
+    });
+} else {
+    app.listen(PORT, () => {
+        console.log(`Сервер запущен на порту ${PORT}`);
+        console.log(`Бот @flyer_amnyam_bot активен (polling mode)`);
+    });
+}
 
 
