@@ -13,6 +13,522 @@
         }
 
         body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: var(--tg-theme-bg-color, #1a1a1a);
+            color: var(--tg-theme-text-color, #e0e0e0);
+            padding: 0;
+            margin: 0;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 100%;
+            padding: 15px;
+        }
+
+        .header {
+            background: var(--tg-theme-secondary-bg-color, #2d2d2d);
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+
+        .user-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: var(--tg-theme-button-color, #5c6bc0);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--tg-theme-button-text-color, white);
+        }
+
+        .user-name {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--tg-theme-text-color, #e0e0e0);
+        }
+
+        h1 {
+            text-align: center;
+            color: var(--tg-theme-text-color, #e0e0e0);
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            font-weight: 600;
+        }
+
+        .summary {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .summary-card {
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            background: var(--tg-theme-secondary-bg-color, #2d2d2d);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+        }
+
+        .summary-card.income {
+            background: linear-gradient(135deg, #1b5e20 0%, #2e7d32 100%);
+        }
+
+        .summary-card.spent {
+            background: linear-gradient(135deg, #b71c1c 0%, #c62828 100%);
+        }
+
+        .summary-card.buyback {
+            background: linear-gradient(135deg, #0d47a1 0%, #1976d2 100%);
+        }
+
+        .summary-card.earned {
+            background: linear-gradient(135deg, #e65100 0%, #f57c00 100%);
+        }
+
+        .summary-card h3 {
+            font-size: 0.75em;
+            margin-bottom: 8px;
+            color: rgba(255,255,255,0.8);
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .summary-card .amount {
+            font-size: 1.4em;
+            font-weight: 700;
+            color: white;
+        }
+
+        .card {
+            background: var(--tg-theme-secondary-bg-color, #2d2d2d);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--tg-theme-hint-color, #4a4a4a);
+        }
+
+        .card-header h3 {
+            color: var(--tg-theme-link-color, #90caf9);
+            font-size: 1.1em;
+            margin: 0;
+        }
+
+        .card-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .card-row label {
+            color: var(--tg-theme-hint-color, #b0b0b0);
+            font-size: 0.9em;
+            flex: 0 0 45%;
+        }
+
+        .card-row input {
+            width: 50%;
+            padding: 8px;
+            border: 1px solid var(--tg-theme-hint-color, #4a4a4a);
+            border-radius: 6px;
+            font-size: 14px;
+            background: var(--tg-theme-bg-color, #1a1a1a);
+            color: var(--tg-theme-text-color, #e0e0e0);
+        }
+
+        .card-row input:focus {
+            outline: none;
+            border-color: var(--tg-theme-button-color, #5c6bc0);
+        }
+
+        .card-result {
+            background: var(--tg-theme-bg-color, #1a1a1a);
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 12px;
+            text-align: center;
+        }
+
+        .card-result .label {
+            color: var(--tg-theme-hint-color, #b0b0b0);
+            font-size: 0.85em;
+            margin-bottom: 5px;
+        }
+
+        .card-result .value {
+            color: var(--tg-theme-link-color, #90caf9);
+            font-size: 1.4em;
+            font-weight: 700;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .btn:active {
+            opacity: 0.7;
+        }
+
+        .btn-primary {
+            background: var(--tg-theme-button-color, #5c6bc0);
+            color: var(--tg-theme-button-text-color, white);
+            margin-bottom: 15px;
+        }
+
+        .btn-danger {
+            background: #d32f2f;
+            color: white;
+            padding: 8px 16px;
+            font-size: 14px;
+            width: auto;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--tg-theme-hint-color, #888);
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--tg-theme-hint-color, #888);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="user-info">
+                <div class="user-avatar" id="userAvatar">?</div>
+                <div class="user-name" id="userName">Загрузка...</div>
+            </div>
+            
+            <div class="summary">
+                <div class="summary-card income">
+                    <h3>Вход</h3>
+                    <div class="amount" id="totalIncome">0 ₽</div>
+                </div>
+                <div class="summary-card spent">
+                    <h3>Потрачено</h3>
+                    <div class="amount" id="totalSpent">0 ₽</div>
+                </div>
+                <div class="summary-card buyback">
+                    <h3>Выход</h3>
+                    <div class="amount" id="totalBuyback">0 ₽</div>
+                </div>
+                <div class="summary-card earned">
+                    <h3>Заработано</h3>
+                    <div class="amount" id="totalEarned">0 ₽</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="cardsList"></div>
+
+        <button class="btn btn-primary" onclick="addCard()">➕ Добавить операцию</button>
+    </div>
+
+    <script>
+        let tg = window.Telegram.WebApp;
+        let rowCounter = 0;
+        let currentUser = null;
+        let userData = null;
+
+        // Инициализация
+        tg.ready();
+        tg.expand();
+        
+        // Применить тему Telegram
+        document.body.style.backgroundColor = tg.backgroundColor || '#1a1a1a';
+
+        // Получить данные пользователя из Telegram
+        if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+            userData = tg.initDataUnsafe.user;
+            currentUser = 'tg_' + userData.id;
+            
+            const firstName = userData.first_name || 'Пользователь';
+            const lastName = userData.last_name || '';
+            document.getElementById('userName').textContent = firstName + (lastName ? ' ' + lastName : '');
+            document.getElementById('userAvatar').textContent = firstName.charAt(0).toUpperCase();
+            
+            loadData();
+        } else {
+            document.getElementById('userName').textContent = 'Гость';
+            document.getElementById('userAvatar').textContent = 'Г';
+            currentUser = 'guest_' + Date.now();
+            loadData();
+        }
+
+        function addCard() {
+            rowCounter++;
+            const cardsList = document.getElementById('cardsList');
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.id = `card-${rowCounter}`;
+            
+            card.innerHTML = `
+                <div class="card-header">
+                    <h3>Операция #${rowCounter}</h3>
+                    <button class="btn-danger" onclick="deleteCard(${rowCounter})">Удалить</button>
+                </div>
+                <div class="card-row">
+                    <label>Реквизит:</label>
+                    <input type="text" placeholder="Реквизит" onchange="saveData()">
+                </div>
+                <div class="card-row">
+                    <label>Вход (₽):</label>
+                    <input type="number" value="0" min="0" step="0.01" onchange="calculate(${rowCounter})">
+                </div>
+                <div class="card-row">
+                    <label>% заработка:</label>
+                    <input type="number" value="11" min="0" max="100" step="0.01" onchange="calculate(${rowCounter})">
+                </div>
+                <div class="card-row">
+                    <label>Потрачено (₽):</label>
+                    <input type="number" value="0" min="0" step="0.01" onchange="calculate(${rowCounter})">
+                </div>
+                <div class="card-row">
+                    <label>Выход (₽):</label>
+                    <input type="number" value="0" min="0" step="0.01" onchange="calculate(${rowCounter})">
+                </div>
+                <div class="card-row">
+                    <label>% откупа:</label>
+                    <input type="number" value="1" min="0" max="100" step="0.01" onchange="calculate(${rowCounter})">
+                </div>
+                <div class="card-result">
+                    <div class="label">Заработано</div>
+                    <div class="value" id="earned-${rowCounter}">0.00 ₽</div>
+                </div>
+            `;
+            
+            cardsList.appendChild(card);
+            calculate(rowCounter);
+            saveData();
+            
+            // Показать haptic feedback
+            if (tg.HapticFeedback) {
+                tg.HapticFeedback.impactOccurred('light');
+            }
+        }
+
+        function calculate(cardId) {
+            const card = document.getElementById(`card-${cardId}`);
+            if (!card) return;
+            
+            const inputs = card.querySelectorAll('input');
+            const income = parseFloat(inputs[1].value) || 0;
+            const incomePercent = parseFloat(inputs[2].value) || 0;
+            const spent = parseFloat(inputs[3].value) || 0;
+            const buyback = parseFloat(inputs[4].value) || 0;
+            const buybackPercent = parseFloat(inputs[5].value) || 0;
+            
+            const earnedFromIncome = (income * incomePercent) / 100;
+            const earnedFromBuyback = (buyback * buybackPercent) / 100;
+            const totalEarned = earnedFromIncome + earnedFromBuyback - spent;
+            
+            document.getElementById(`earned-${cardId}`).textContent = totalEarned.toFixed(2) + ' ₽';
+            
+            updateSummary();
+            saveData();
+        }
+
+        function updateSummary() {
+            let totalIncome = 0;
+            let totalSpent = 0;
+            let totalBuyback = 0;
+            let totalEarned = 0;
+            
+            const cards = document.querySelectorAll('.card');
+            cards.forEach(card => {
+                const inputs = card.querySelectorAll('input');
+                const income = parseFloat(inputs[1].value) || 0;
+                const incomePercent = parseFloat(inputs[2].value) || 0;
+                const spent = parseFloat(inputs[3].value) || 0;
+                const buyback = parseFloat(inputs[4].value) || 0;
+                const buybackPercent = parseFloat(inputs[5].value) || 0;
+                
+                totalIncome += income;
+                totalSpent += spent;
+                totalBuyback += buyback;
+                
+                const earnedFromIncome = (income * incomePercent) / 100;
+                const earnedFromBuyback = (buyback * buybackPercent) / 100;
+                totalEarned += earnedFromIncome + earnedFromBuyback - spent;
+            });
+            
+            document.getElementById('totalIncome').textContent = totalIncome.toFixed(2) + ' ₽';
+            document.getElementById('totalSpent').textContent = totalSpent.toFixed(2) + ' ₽';
+            document.getElementById('totalBuyback').textContent = totalBuyback.toFixed(2) + ' ₽';
+            document.getElementById('totalEarned').textContent = totalEarned.toFixed(2) + ' ₽';
+        }
+
+        function deleteCard(cardId) {
+            const card = document.getElementById(`card-${cardId}`);
+            if (card) {
+                card.remove();
+                updateSummary();
+                saveData();
+                
+                if (tg.HapticFeedback) {
+                    tg.HapticFeedback.impactOccurred('medium');
+                }
+            }
+        }
+
+        async function saveData() {
+            if (!currentUser) return;
+            
+            const cards = document.querySelectorAll('.card');
+            const data = [];
+            
+            cards.forEach(card => {
+                const inputs = card.querySelectorAll('input');
+                data.push({
+                    id: card.id,
+                    requisite: inputs[0].value,
+                    income: inputs[1].value,
+                    incomePercent: inputs[2].value,
+                    spent: inputs[3].value,
+                    buyback: inputs[4].value,
+                    buybackPercent: inputs[5].value
+                });
+            });
+            
+            try {
+                await fetch(`/api/data/${currentUser}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        rows: data,
+                        rowCounter: rowCounter,
+                        userData: userData
+                    })
+                });
+            } catch (error) {
+                console.error('Ошибка сохранения:', error);
+                if (tg.showAlert) {
+                    tg.showAlert('Ошибка сохранения данных');
+                }
+            }
+        }
+
+        async function loadData() {
+            if (!currentUser) return;
+            
+            try {
+                const response = await fetch(`/api/data/${currentUser}`);
+                const savedData = await response.json();
+                
+                if (savedData.rowCounter) {
+                    rowCounter = savedData.rowCounter;
+                }
+                
+                const cardsList = document.getElementById('cardsList');
+                cardsList.innerHTML = '';
+                
+                if (savedData.rows && savedData.rows.length > 0) {
+                    savedData.rows.forEach(item => {
+                        const cardId = parseInt(item.id.split('-')[1]);
+                        const card = document.createElement('div');
+                        card.className = 'card';
+                        card.id = item.id;
+                        
+                        card.innerHTML = `
+                            <div class="card-header">
+                                <h3>Операция #${cardId}</h3>
+                                <button class="btn-danger" onclick="deleteCard(${cardId})">Удалить</button>
+                            </div>
+                            <div class="card-row">
+                                <label>Реквизит:</label>
+                                <input type="text" value="${item.requisite}" placeholder="Реквизит" onchange="saveData()">
+                            </div>
+                            <div class="card-row">
+                                <label>Вход (₽):</label>
+                                <input type="number" value="${item.income}" min="0" step="0.01" onchange="calculate(${cardId})">
+                            </div>
+                            <div class="card-row">
+                                <label>% заработка:</label>
+                                <input type="number" value="${item.incomePercent}" min="0" max="100" step="0.01" onchange="calculate(${cardId})">
+                            </div>
+                            <div class="card-row">
+                                <label>Потрачено (₽):</label>
+                                <input type="number" value="${item.spent}" min="0" step="0.01" onchange="calculate(${cardId})">
+                            </div>
+                            <div class="card-row">
+                                <label>Выход (₽):</label>
+                                <input type="number" value="${item.buyback}" min="0" step="0.01" onchange="calculate(${cardId})">
+                            </div>
+                            <div class="card-row">
+                                <label>% откупа:</label>
+                                <input type="number" value="${item.buybackPercent}" min="0" max="100" step="0.01" onchange="calculate(${cardId})">
+                            </div>
+                            <div class="card-result">
+                                <div class="label">Заработано</div>
+                                <div class="value" id="earned-${cardId}">0.00 ₽</div>
+                            </div>
+                        `;
+                        
+                        cardsList.appendChild(card);
+                        calculate(cardId);
+                    });
+                } else {
+                    addCard();
+                }
+            } catch (error) {
+                console.error('Ошибка загрузки:', error);
+                addCard();
+            }
+        }
+    </script>
+</body>
+</html>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: #1a1a1a;
             color: #e0e0e0;
@@ -367,14 +883,15 @@
     <div class="container">
         <div id="loginScreen" class="login-screen">
             <h2>💳 Учёт операций по карте</h2>
-            <p>Для начала работы откройте бота в Telegram</p>
-            <a href="https://t.me/flyer_amnyam_bot" target="_blank">
+            <p>Для начала работы откройте бота в Telegram и нажмите /start</p>
+            <a href="https://t.me/flyer_amnyam_bot?start=webapp" target="_blank" style="text-decoration: none;">
                 <button style="background: #0088cc; padding: 15px 30px; font-size: 16px; margin-top: 20px;">
-                    📱 Открыть бота @flyer_amnyam_bot
+                    📱 Открыть @flyer_amnyam_bot
                 </button>
             </a>
-            <p style="margin-top: 20px; font-size: 0.9em; color: #888;">
-                Нажмите /start в боте, затем кнопку "Открыть приложение"
+            <p style="margin-top: 30px; font-size: 0.95em; color: #b0b0b0; max-width: 400px;">
+                После открытия бота нажмите /start, затем кнопку "🚀 Открыть приложение". 
+                Приложение откроется прямо в Telegram с автоматической авторизацией.
             </p>
         </div>
 
