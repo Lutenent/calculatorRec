@@ -430,7 +430,6 @@
             <div class="card">
                 <div class="card-header">
                     <h3 id="requisiteDetailsTitle">Реквизит</h3>
-                    <button class="btn-danger" onclick="closeRequisiteDetails()">Закрыть</button>
                 </div>
                 
                 <div class="summary">
@@ -455,19 +454,22 @@
 
             <div class="card" id="requisiteBlockCard">
                 <div class="card-header">
-                    <h3>🔒 Блокировка</h3>
+                    <h3>🔒 Статус карты</h3>
                 </div>
                 <div id="blockStatus"></div>
             </div>
 
             <div class="card">
                 <div class="card-header">
-                    <h3>История операций</h3>
+                    <h3>📊 История операций</h3>
                 </div>
                 <div id="requisiteHistory"></div>
             </div>
 
-            <button class="btn btn-danger" onclick="deleteRequisiteFromDetails()">🗑️ Удалить реквизит</button>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px;">
+                <button class="btn btn-primary" onclick="closeRequisiteDetails()">← Назад</button>
+                <button class="btn btn-danger" onclick="deleteRequisiteFromDetails()">🗑️ Удалить</button>
+            </div>
         </div>
 
         <!-- Раздел: Админ -->
@@ -734,21 +736,30 @@
 
             if (isBlocked) {
                 document.getElementById('blockStatus').innerHTML = `
-                    <div style="background: var(--tg-theme-bg-color, #1a1a1a); padding: 15px; border-radius: 8px; margin-bottom: 10px;">
-                        <div style="color: #f44336; font-weight: 600; margin-bottom: 10px;">🔒 Карта заблокирована</div>
-                        <div style="color: var(--tg-theme-hint-color, #b0b0b0); margin-bottom: 15px;">Сумма блока: ${blockAmount.toFixed(2)} ₽</div>
-                        <button class="btn btn-primary" onclick="unblockRequisite()">✅ Снять блок</button>
+                    <div style="background: linear-gradient(135deg, #d32f2f 0%, #f44336 100%); padding: 20px; border-radius: 10px; text-align: center; margin-bottom: 15px;">
+                        <div style="font-size: 48px; margin-bottom: 10px;">🔒</div>
+                        <div style="color: white; font-weight: 700; font-size: 18px; margin-bottom: 8px;">КАРТА ЗАБЛОКИРОВАНА</div>
+                        <div style="color: rgba(255,255,255,0.9); font-size: 16px; margin-bottom: 20px;">Сумма блока: ${blockAmount.toFixed(2)} ₽</div>
+                        <button class="btn" style="background: white; color: #d32f2f; font-weight: 600;" onclick="unblockRequisite()">✅ Снять блок</button>
+                    </div>
+                    <div style="background: var(--tg-theme-bg-color, #1a1a1a); padding: 15px; border-radius: 8px; color: var(--tg-theme-hint-color, #b0b0b0); font-size: 14px; text-align: center;">
+                        ⚠️ Заблокированную карту нельзя использовать в записях
                     </div>
                 `;
             } else {
                 document.getElementById('blockStatus').innerHTML = `
+                    <div style="background: linear-gradient(135deg, #2e7d32 0%, #4caf50 100%); padding: 20px; border-radius: 10px; text-align: center; margin-bottom: 15px;">
+                        <div style="font-size: 48px; margin-bottom: 10px;">✅</div>
+                        <div style="color: white; font-weight: 700; font-size: 18px; margin-bottom: 8px;">КАРТА АКТИВНА</div>
+                        <div style="color: rgba(255,255,255,0.9); font-size: 14px;">Карта доступна для операций</div>
+                    </div>
                     <div style="background: var(--tg-theme-bg-color, #1a1a1a); padding: 15px; border-radius: 8px;">
-                        <div style="color: #4caf50; font-weight: 600; margin-bottom: 15px;">✅ Карта активна</div>
+                        <div style="color: var(--tg-theme-text-color, #e0e0e0); font-weight: 600; margin-bottom: 15px; text-align: center;">Заблокировать карту</div>
                         <div class="card-row">
                             <label>Сумма блока (₽):</label>
-                            <input type="number" id="blockAmountInput" value="0" min="0" step="0.01">
+                            <input type="number" id="blockAmountInput" value="0" min="0" step="0.01" placeholder="Введите сумму">
                         </div>
-                        <button class="btn btn-danger" onclick="blockRequisite()">🔒 Заблокировать карту</button>
+                        <button class="btn btn-danger" onclick="blockRequisite()" style="margin-top: 10px;">🔒 Заблокировать</button>
                     </div>
                 `;
             }
@@ -757,7 +768,7 @@
         function blockRequisite() {
             const blockAmount = parseFloat(document.getElementById('blockAmountInput').value) || 0;
             if (blockAmount <= 0) {
-                if (tg.showAlert) tg.showAlert('Введите сумму блока');
+                if (tg.showAlert) tg.showAlert('⚠️ Введите сумму блока больше 0');
                 return;
             }
 
@@ -768,8 +779,9 @@
                 requisite.blockedAt = new Date().toISOString();
                 renderBlockStatus(requisite);
                 renderRequisites();
+                updateRequisiteSelects(); // Обновить селекты чтобы скрыть заблокированную карту
                 saveData();
-                if (tg.showAlert) tg.showAlert('Карта заблокирована');
+                if (tg.showAlert) tg.showAlert('🔒 Карта заблокирована');
                 if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('warning');
             }
         }
@@ -782,8 +794,9 @@
                 requisite.unblockedAt = new Date().toISOString();
                 renderBlockStatus(requisite);
                 renderRequisites();
+                updateRequisiteSelects(); // Обновить селекты чтобы показать разблокированную карту
                 saveData();
-                if (tg.showAlert) tg.showAlert('Блок снят');
+                if (tg.showAlert) tg.showAlert('✅ Блок снят, карта активна');
                 if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
             }
         }
@@ -859,10 +872,16 @@
             selects.forEach(select => {
                 const currentValue = select.value;
                 const isFilter = select.id === 'filterRequisite';
+                const isRecordSelect = select.id === 'requisiteSelect';
+                
                 select.innerHTML = `<option value="">${isFilter ? 'Все реквизиты' : 'Выберите реквизит'}</option>` +
-                    appData.requisites.map(req => 
-                        `<option value="${req.id}">${req.bankIcon} ${req.bankName} - ${req.number}</option>`
-                    ).join('');
+                    appData.requisites
+                        .filter(req => !isRecordSelect || !req.blocked) // Скрыть заблокированные в записях
+                        .map(req => {
+                            const blockedLabel = req.blocked ? ' 🔒' : '';
+                            return `<option value="${req.id}">${req.bankIcon} ${req.bankName} - ${req.number}${blockedLabel}</option>`;
+                        })
+                        .join('');
                 select.value = currentValue;
             });
         }
@@ -895,6 +914,14 @@
             }
 
             const requisite = appData.requisites.find(r => r.id == requisiteId);
+            
+            // Проверка на блокировку
+            if (requisite.blocked) {
+                if (tg.showAlert) tg.showAlert('❌ Эта карта заблокирована! Снимите блок чтобы использовать её.');
+                if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
+                return;
+            }
+            
             const date = document.getElementById('recordDate').value;
             const income = parseFloat(document.getElementById('recordIncome').value) || 0;
             const incomePercent = parseFloat(document.getElementById('recordIncomePercent').value) || 0;
@@ -932,8 +959,8 @@
 
             updateSummary();
             saveData();
-            if (tg.showAlert) tg.showAlert('Запись добавлена!');
-            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+            if (tg.showAlert) tg.showAlert('✅ Запись добавлена!');
+            if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
         }
 
         function updateSummary() {
