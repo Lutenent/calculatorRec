@@ -425,6 +425,51 @@
             <div id="historyList"></div>
         </div>
 
+        <!-- Раздел: Детали реквизита -->
+        <div id="requisiteDetailsSection" class="section">
+            <div class="card">
+                <div class="card-header">
+                    <h3 id="requisiteDetailsTitle">Реквизит</h3>
+                    <button class="btn-danger" onclick="closeRequisiteDetails()">Закрыть</button>
+                </div>
+                
+                <div class="summary">
+                    <div class="summary-card income">
+                        <h3>Вход</h3>
+                        <div class="amount" id="reqTotalIncome">0 ₽</div>
+                    </div>
+                    <div class="summary-card spent">
+                        <h3>Потрачено</h3>
+                        <div class="amount" id="reqTotalSpent">0 ₽</div>
+                    </div>
+                    <div class="summary-card buyback">
+                        <h3>Выход</h3>
+                        <div class="amount" id="reqTotalBuyback">0 ₽</div>
+                    </div>
+                    <div class="summary-card earned">
+                        <h3>Заработано</h3>
+                        <div class="amount" id="reqTotalEarned">0 ₽</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card" id="requisiteBlockCard">
+                <div class="card-header">
+                    <h3>🔒 Блокировка</h3>
+                </div>
+                <div id="blockStatus"></div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3>История операций</h3>
+                </div>
+                <div id="requisiteHistory"></div>
+            </div>
+
+            <button class="btn btn-danger" onclick="deleteRequisiteFromDetails()">🗑️ Удалить реквизит</button>
+        </div>
+
         <!-- Раздел: Админ -->
         <div id="adminSection" class="section">
             <div class="card">
@@ -498,10 +543,10 @@
         const ADMIN_IDS = [8111977113, 7316137579];
         
         const banks = [
-            { id: 'ozon', name: 'Озон', icon: '�' },
-            { id: 'sber', name: 'Сбербанк', icon: '�' },
+            { id: 'ozon', name: 'Озон', icon: '🔵' },
+            { id: 'sber', name: 'Сбербанк', icon: '🟢' },
             { id: 'alpha', name: 'Альфа', icon: '🔴' },
-            { id: 'tinkoff', name: 'Тинькофф', icon: '�' },
+            { id: 'tinkoff', name: 'Тинькофф', icon: '🟡' },
             { id: 'vtb', name: 'ВТБ', icon: '⚪' },
             { id: 'other', name: 'Другой', icon: '⚫' }
         ];
@@ -620,15 +665,19 @@
                 return;
             }
             
-            list.innerHTML = appData.requisites.map(req => `
-                <div class="requisite-item">
-                    <div class="requisite-info">
-                        <div class="requisite-bank">${req.bankIcon} ${req.bankName}</div>
-                        <div class="requisite-number">${req.number}</div>
+            list.innerHTML = appData.requisites.map(req => {
+                const isBlocked = req.blocked || false;
+                const blockAmount = req.blockAmount || 0;
+                return `
+                    <div class="requisite-item" onclick="openRequisiteDetails(${req.id})" style="cursor: pointer;">
+                        <div class="requisite-info">
+                            <div class="requisite-bank">${req.bankIcon} ${req.bankName} ${isBlocked ? '🔒' : ''}</div>
+                            <div class="requisite-number">${req.number}${isBlocked ? ` • Блок: ${blockAmount.toFixed(2)} ₽` : ''}</div>
+                        </div>
+                        <button class="btn-primary" style="padding: 8px 16px; font-size: 14px; width: auto;" onclick="event.stopPropagation(); openRequisiteDetails(${req.id})">Открыть</button>
                     </div>
-                    <button class="btn-danger" onclick="deleteRequisite(${req.id})">Удалить</button>
-                </div>
-            `).join('');
+                `;
+            }).join('');
         }
 
         function deleteRequisite(id) {
@@ -637,6 +686,172 @@
             updateRequisiteSelects();
             saveData();
             if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+        }
+
+        let currentRequisiteId = null;
+
+        function openRequisiteDetails(requisiteId) {
+            currentRequisiteId = requisiteId;
+            const requisite = appData.requisites.find(r => r.id === requisiteId);
+            if (!requisite) return;
+
+            // Скрыть раздел реквизитов, показать детали
+            document.getElementById('requisitesSection').classList.remove('active');
+            document.getElementById('requisiteDetailsSection').classList.add('active');
+
+            // Заголовок
+            document.getElementById('requisiteDetailsTitle').textContent = 
+                `${requisite.bankIcon} ${requisite.bankName} - ${requisite.number}`;
+
+            // Статистика по реквизиту
+            const requisiteRecords = appData.records.filter(r => r.requisiteId === requisiteId);
+            let totalIncome = 0, totalSpent = 0, totalBuyback = 0, totalEarned = 0;
+            
+            requisiteRecords.forEach(record => {
+                totalIncome += record.income;
+                totalSpent += record.spent;
+                totalBuyback += record.buyback;
+                totalEarned += record.earned;
+            });
+
+            document.getElementById('reqTotalIncome').textContent = totalIncome.toFixed(2) + ' ₽';
+            document.getElementById('reqTotalSpent').textContent = totalSpent.toFixed(2) + ' ₽';
+            document.getElementById('reqTotalBuyback').textContent = totalBuyback.toFixed(2) + ' ₽';
+            document.getElementById('reqTotalEarned').textContent = totalEarned.toFixed(2) + ' ₽';
+
+            // Блокировка
+            renderBlockStatus(requisite);
+
+            // История операций
+            renderRequisiteHistory(requisiteRecords);
+
+            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+        }
+
+        function renderBlockStatus(requisite) {
+            const isBlocked = requisite.blocked || false;
+            const blockAmount = requisite.blockAmount || 0;
+
+            if (isBlocked) {
+                document.getElementById('blockStatus').innerHTML = `
+                    <div style="background: var(--tg-theme-bg-color, #1a1a1a); padding: 15px; border-radius: 8px; margin-bottom: 10px;">
+                        <div style="color: #f44336; font-weight: 600; margin-bottom: 10px;">🔒 Карта заблокирована</div>
+                        <div style="color: var(--tg-theme-hint-color, #b0b0b0); margin-bottom: 15px;">Сумма блока: ${blockAmount.toFixed(2)} ₽</div>
+                        <button class="btn btn-primary" onclick="unblockRequisite()">✅ Снять блок</button>
+                    </div>
+                `;
+            } else {
+                document.getElementById('blockStatus').innerHTML = `
+                    <div style="background: var(--tg-theme-bg-color, #1a1a1a); padding: 15px; border-radius: 8px;">
+                        <div style="color: #4caf50; font-weight: 600; margin-bottom: 15px;">✅ Карта активна</div>
+                        <div class="card-row">
+                            <label>Сумма блока (₽):</label>
+                            <input type="number" id="blockAmountInput" value="0" min="0" step="0.01">
+                        </div>
+                        <button class="btn btn-danger" onclick="blockRequisite()">🔒 Заблокировать карту</button>
+                    </div>
+                `;
+            }
+        }
+
+        function blockRequisite() {
+            const blockAmount = parseFloat(document.getElementById('blockAmountInput').value) || 0;
+            if (blockAmount <= 0) {
+                if (tg.showAlert) tg.showAlert('Введите сумму блока');
+                return;
+            }
+
+            const requisite = appData.requisites.find(r => r.id === currentRequisiteId);
+            if (requisite) {
+                requisite.blocked = true;
+                requisite.blockAmount = blockAmount;
+                requisite.blockedAt = new Date().toISOString();
+                renderBlockStatus(requisite);
+                renderRequisites();
+                saveData();
+                if (tg.showAlert) tg.showAlert('Карта заблокирована');
+                if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('warning');
+            }
+        }
+
+        function unblockRequisite() {
+            const requisite = appData.requisites.find(r => r.id === currentRequisiteId);
+            if (requisite) {
+                requisite.blocked = false;
+                requisite.blockAmount = 0;
+                requisite.unblockedAt = new Date().toISOString();
+                renderBlockStatus(requisite);
+                renderRequisites();
+                saveData();
+                if (tg.showAlert) tg.showAlert('Блок снят');
+                if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+            }
+        }
+
+        function renderRequisiteHistory(records) {
+            const list = document.getElementById('requisiteHistory');
+            if (records.length === 0) {
+                list.innerHTML = '<p style="text-align:center;color:var(--tg-theme-hint-color,#888);padding:20px;">Нет операций</p>';
+                return;
+            }
+
+            // Сортировка по дате
+            records.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            // Группировка по датам
+            const grouped = {};
+            records.forEach(record => {
+                if (!grouped[record.date]) {
+                    grouped[record.date] = [];
+                }
+                grouped[record.date].push(record);
+            });
+
+            list.innerHTML = Object.keys(grouped).map(date => {
+                const dayRecords = grouped[date];
+                const dayTotal = dayRecords.reduce((sum, r) => sum + r.earned, 0);
+                
+                return `
+                    <div style="margin-bottom: 15px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid var(--tg-theme-hint-color, #4a4a4a);">
+                            <span style="font-weight: 600;">📅 ${formatDate(date)}</span>
+                            <span style="color: var(--tg-theme-link-color, #90caf9); font-weight: 700;">${dayTotal.toFixed(2)} ₽</span>
+                        </div>
+                        ${dayRecords.map(record => `
+                            <div style="background: var(--tg-theme-bg-color, #1a1a1a); padding: 10px; border-radius: 6px; margin-bottom: 8px; font-size: 13px;">
+                                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; color: var(--tg-theme-hint-color, #b0b0b0);">
+                                    <div>Вход: ${record.income.toFixed(2)} ₽</div>
+                                    <div>% заработка: ${record.incomePercent}%</div>
+                                    <div>Потрачено: ${record.spent.toFixed(2)} ₽</div>
+                                    <div>Выход: ${record.buyback.toFixed(2)} ₽</div>
+                                    <div>% откупа: ${record.buybackPercent}%</div>
+                                    <div style="color: var(--tg-theme-link-color, #90caf9); font-weight: 600;">Заработано: ${record.earned.toFixed(2)} ₽</div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function closeRequisiteDetails() {
+            document.getElementById('requisiteDetailsSection').classList.remove('active');
+            document.getElementById('requisitesSection').classList.add('active');
+            currentRequisiteId = null;
+            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+        }
+
+        function deleteRequisiteFromDetails() {
+            if (!currentRequisiteId) return;
+            
+            if (confirm('Удалить этот реквизит? Все связанные записи останутся.')) {
+                appData.requisites = appData.requisites.filter(r => r.id !== currentRequisiteId);
+                closeRequisiteDetails();
+                renderRequisites();
+                updateRequisiteSelects();
+                saveData();
+                if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+            }
         }
 
         function updateRequisiteSelects() {
