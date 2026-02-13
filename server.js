@@ -112,9 +112,11 @@ bot.on('web_app_data', (msg) => {
 app.get('/api/data/:userId', async (req, res) => {
     try {
         const userId = req.params.userId;
+        console.log('📥 Загрузка данных для пользователя:', userId);
         
         if (MONGODB_URI && mongoose.connection.readyState === 1) {
             const userData = await UserData.findOne({ userId });
+            console.log('📦 Найдено записей:', userData?.records?.length || 0);
             res.json(userData || { rows: [], rowCounter: 0 });
         } else {
             // Fallback на JSON файл (только для локальной разработки)
@@ -136,6 +138,8 @@ app.post('/api/data/:userId', async (req, res) => {
     try {
         const userId = req.params.userId;
         const userData = req.body;
+        console.log('💾 Сохранение данных для пользователя:', userId);
+        console.log('📝 Записей:', userData.records?.length || 0, 'Реквизитов:', userData.requisites?.length || 0);
         
         if (MONGODB_URI && mongoose.connection.readyState === 1) {
             await UserData.findOneAndUpdate(
@@ -143,6 +147,7 @@ app.post('/api/data/:userId', async (req, res) => {
                 { ...userData, userId, updatedAt: new Date() },
                 { upsert: true, new: true }
             );
+            console.log('✅ Данные сохранены в MongoDB');
             res.json({ success: true });
         } else {
             // Fallback на JSON файл (только для локальной разработки)
